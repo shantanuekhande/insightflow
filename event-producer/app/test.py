@@ -1,0 +1,1 @@
+print("InsightFlow setup successful 🚀")

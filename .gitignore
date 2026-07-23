@@ -1,0 +1,16 @@
+# Python virtual environments
+venv/
+venv_insightflow/
+.venv/
+
+# Python cache and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local environment files
+.env
+
+# Generated event output
+event-producer/generated_events/*
+!event-producer/generated_events/.gitkeep
