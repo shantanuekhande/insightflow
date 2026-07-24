@@ -1,1 +1,0 @@
-print("InsightFlow setup successful 🚀")

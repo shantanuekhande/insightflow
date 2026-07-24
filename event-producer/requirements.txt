@@ -1,5 +1,0 @@
-pydantic>=2.0
-faker
-orjson
-python-dotenv
-uuid6
