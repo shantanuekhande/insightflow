@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 
 from src.api.config import APIConfig
 from src.api.queries import QueryService
+from src.api.dashboard import router as dashboard_router
 
 
 # ── Shared state ──────────────────────────────────────────────────────────
@@ -50,7 +51,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-
+app.include_router(dashboard_router)
 # ── Response schemas ──────────────────────────────────────────────────────
 
 

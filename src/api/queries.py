@@ -14,6 +14,8 @@ from datetime import date
 from pathlib import Path
 from typing import List, Optional
 
+import threading
+
 import duckdb
 import polars as pl
 
@@ -25,11 +27,28 @@ class QueryService:
         self._gold_root = gold_root
         self._silver_root = silver_root
         self._con = duckdb.connect(":memory:")
+        self._lock = threading.Lock()  # ADD THIS
+
+    
+    # ── Internal helper ─────────────────────────────────────────
+
+    def _query(self, sql: str, params: list = None) -> list[dict]:
+        """Execute SQL and return list of dicts. Thread-safe."""
+        # Acquire lock before accessing DuckDB connection
+        with self._lock:
+            self._con.execute(sql, params or [])
+            desc = self._con.description
+            if desc is None:
+                return []
+            cols = [d[0] for d in desc]
+            rows = self._con.fetchall()
+            return [dict(zip(cols, row)) for row in rows]
+        # Lock is automatically released upon exiting 'with' block
 
     def close(self) -> None:
-        self._con.close()
-
-    # ── Model Performance ──────────────────────────────────────────────
+            self._con.close()
+    
+    # ── Model Performance ──────────────────────────────────────
 
     def get_model_perf(
         self, target_date: Optional[date] = None
@@ -37,11 +56,11 @@ class QueryService:
         path = self._gold_table_path("model_perf", target_date)
         if path is None:
             return []
-        return self._con.execute(
+        return self._query(
             f"SELECT * FROM read_parquet('{path}') ORDER BY request_count DESC"
-        ).fetchall_asdict()
+        )
 
-    # ── User Activity ───────────────────────────────────────────────────
+    # ── User Activity ───────────────────────────────────────────
 
     def get_user_activity(
         self, target_date: Optional[date] = None
@@ -49,11 +68,11 @@ class QueryService:
         path = self._gold_table_path("user_activity", target_date)
         if path is None:
             return []
-        return self._con.execute(
+        return self._query(
             f"SELECT * FROM read_parquet('{path}') ORDER BY subscription_tier"
-        ).fetchall_asdict()
+        )
 
-    # ── Conversation Stats ─────────────────────────────────────────────
+    # ── Conversation Stats ─────────────────────────────────────
 
     def get_conversation_stats(
         self, target_date: Optional[date] = None
@@ -61,11 +80,11 @@ class QueryService:
         path = self._gold_table_path("conversation_stats", target_date)
         if path is None:
             return []
-        return self._con.execute(
+        return self._query(
             f"SELECT * FROM read_parquet('{path}')"
-        ).fetchall_asdict()
+        )
 
-    # ── Prompt Analytics ──────────────────────────────────────────────
+    # ── Prompt Analytics ──────────────────────────────────────
 
     def get_prompt_analytics(
         self, target_date: Optional[date] = None
@@ -73,11 +92,11 @@ class QueryService:
         path = self._gold_table_path("prompt_analytics", target_date)
         if path is None:
             return []
-        return self._con.execute(
+        return self._query(
             f"SELECT * FROM read_parquet('{path}') ORDER BY total_prompts DESC"
-        ).fetchall_asdict()
+        )
 
-    # ── Feedback Summary ───────────────────────────────────────────────
+    # ── Feedback Summary ───────────────────────────────────────
 
     def get_feedback_summary(
         self, target_date: Optional[date] = None
@@ -85,11 +104,11 @@ class QueryService:
         path = self._gold_table_path("feedback_summary", target_date)
         if path is None:
             return []
-        return self._con.execute(
+        return self._query(
             f"SELECT * FROM read_parquet('{path}') ORDER BY count DESC"
-        ).fetchall_asdict()
+        )
 
-    # ── Silver: Event detail query ────────────────────────────────────
+    # ── Silver: Event detail query ────────────────────────────
 
     def get_events(
         self,
@@ -110,9 +129,9 @@ class QueryService:
 
         sql += f" LIMIT {limit}"
 
-        return self._con.execute(sql, params).fetchall_asdict()
+        return self._query(sql, params)
 
-    # ── Available dates ────────────────────────────────────────────────
+    # ── Available dates ────────────────────────────────────────
 
     def get_available_dates(self) -> List[str]:
         if not self._gold_root.exists():
@@ -123,7 +142,7 @@ class QueryService:
             if d.is_dir() and not d.name.startswith(".")
         )
 
-    # ── Helpers ─────────────────────────────────────────────────────────
+    # ── Helpers ─────────────────────────────────────────────────
 
     def _gold_table_path(
         self, table_name: str, target_date: Optional[date] = None

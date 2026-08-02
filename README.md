@@ -21,6 +21,10 @@ The production database isn't designed for analytics. Application logs are scatt
 
 **InsightFlow transforms raw telemetry events into actionable business insights.**
 
+![Python](https://img.shields.io/badge/Python-3.9+-blue)
+![Polars](https://img.shields.io/badge/Polars-columnar-orange)
+![DuckDB](https://img.shields.io/badge/DuckDB-embedded-green)
+
 ---
 
 ## Architecture
@@ -54,18 +58,14 @@ Dashboard (Visualization)        ← Business-friendly charts
 
 ## Tech Stack
 
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| Language | Python | Primary language for data engineering ecosystem |
-| ETL Processing | Polars (V1) | Rust-based, fast, teaches query optimization internals |
-| Storage Format | Parquet | Columnar, compressed, predicate pushdown, schema-embedded |
-| Query Engine | DuckDB | In-process OLAP, reads Parquet natively, zero-copy |
-| API Framework | FastAPI | Async-native, auto-docs, Pydantic validation |
-| Containers | Docker Compose | Reproducible, production-parallels, isolated services |
-| Event Modeling | Pydantic | Type-safe event definitions, validation at write time |
-| Testing | pytest | Industry standard, fixtures, parametrized tests |
-
-**Future (V2+):** Apache Kafka, Apache Spark, Airflow, Delta Lake, AWS S3, Kubernetes
+| Component | Technology | Why |
+|-----------|-----------|-----|
+| Schemas | Pydantic v2 | Runtime validation, JSON serialization |
+| ETL | Polars | Rust-based, columnar, fast transformations |
+| Queries | DuckDB | SQL on Parquet, zero-copy reads, predicate pushdown |
+| API | FastAPI + Uvicorn | Async, auto-docs (Swagger), type-safe endpoints |
+| Dashboard | Vanilla HTML/JS | Zero build step, API consumer pattern |
+| Storage | Parquet | Compressed, schema-embedded, columnar reads |
 
 ---
 
@@ -88,12 +88,12 @@ Full schema documentation: [docs/event-schema.md](docs/event-schema.md)
 
 ## Data Layers
 
-| Layer | Format | Description |
-|-------|--------|-------------|
-| Landing Zone | JSON (raw) | Raw events as received. Used for replay, audit, and reprocessing. |
-| Bronze | Parquet | Raw data persisted in columnar format. Immutable. |
-| Silver | Parquet | Validated, cleaned, deduplicated, standardized. |
-| Gold | Parquet | Business-ready aggregations (daily usage, model stats, cost, feedback). |
+| Layer | Format | Validates | Produces |
+|-------|--------|-----------|----------|
+| **Landing** | JSON files (date-partitioned) | — | Raw events with noise (malformed, duplicates, late arrivals) |
+| **Bronze** | Parquet (per event type) | Structure (4 required fields) | Structurally valid events, quarantined failures |
+| **Silver** | Parquet (all events merged) | Semantics (enum values, nulls, dedup) | Clean, deduplicated, sorted events |
+| **Gold** | Parquet (5 tables) | Aggregations | model_perf, user_activity, conversation_stats, prompt_analytics, feedback_summary |
 
 **Partition Strategy:** All layers partitioned by `event_date` (YYYY-MM-DD). Date-first partitioning optimizes for the most common query pattern: time-bounded analytics.
 
@@ -102,31 +102,35 @@ Full schema documentation: [docs/event-schema.md](docs/event-schema.md)
 ## Project Structure
 
 ```
-insightflow/
-├── src/
-│   ├── simulator/       # AI application simulator (event generation)
-│   │   ├── models.py    # Pydantic event models
-│   │   ├── generator.py # Event generation logic
-│   │   ├── personas.py  # User persona definitions
-│   │   └── config.py    # Configuration
-│   ├── schemas/          # Event schema definitions and constants
-│   ├── etl/             # Bronze → Silver → Gold transformations
-│   ├── api/             # FastAPI analytics endpoints
-│   └── tests/           # Unit and integration tests
-├── data/
-│   ├── landing/         # Raw JSON events (date-partitioned)
-│   ├── bronze/          # Immutable Parquet copies
-│   ├── silver/          # Clean, validated Parquet
-│   ├── gold/            # Business-ready Parquet
-│   └── quarantine/      # Failed/malformed events
-├── docs/
-│   ├── event-schema.md  # Complete event schema documentation
-│   ├── HLD.md           # High-Level Design
-│   └── diagrams/        # Architecture and data flow diagrams
-├── docker/              # Dockerfile(s) per service
-├── docker-compose.yml   # Local development environment
-├── pyproject.toml       # Dependencies and project config
-└── README.md            # This file
+src/
+├── schemas/          # Pydantic models + enums (6 event types)
+├── simulator/        # Data generator with personas + noise injection
+├── etl/
+│   ├── config.py     # ETLConfig with path routing
+│   ├── ingest.py     # Landing → Bronze
+│   ├── transform.py  # Bronze → Silver
+│   ├── gold.py       # Silver → Gold (5 aggregation tables)
+│   └── metadata.py   # Pipeline run tracking
+├── api/
+│   ├── config.py     # APIConfig
+│   ├── queries.py    # DuckDB query layer
+│   ├── server.py     # FastAPI app + endpoints
+│   ├── dashboard.py  # Dashboard router
+│   └── static/       # index.html
+└── tests/
+    ├── test_models.py
+    ├── test_silver.py
+    └── test_gold.py
+docs/
+├── tradeoffs.md      # Design decisions and rationale
+├── event-schema.md   # Event specifications with JSON examples
+└── HLD.md            # High-level design document
+data/
+├── landing/          # Raw JSON events (date-partitioned)
+├── bronze/           # Structurally valid Parquet
+├── silver/           # Clean, deduplicated Parquet
+├── gold/             # Pre-computed aggregations
+└── quarantine/       # Failed events with reasons
 ```
 
 ---
@@ -142,62 +146,67 @@ insightflow/
 
 ---
 
-## Getting Started
-
-### Prerequisites
-
-- Python 3.11+
-- Docker and Docker Compose
-- Git
-
-### Setup
+## Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/<your-username>/insightflow.git
-cd insightflow
+# 1. Install dependencies
+pip install polars pydantic fastapi uvicorn duckdb pytest
 
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-# .venv\Scripts\activate     # Windows
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### Running
-
-```bash
-# Start all services
-docker-compose up --build
-
-# Generate sample events
+# 2. Generate synthetic data
 python -m src.simulator.generator
 
-# Run ETL pipeline
-python -m src.etl.ingest
+# 3. Run the full pipeline
+python -m src.etl.ingest      # Landing → Bronze
+python -m src.etl.transform   # Bronze → Silver
+python -m src.etl.gold        # Silver → Gold
 
-# Start the API
-python -m src.api.main
+# 4. Start the API server
+uvicorn src.api.server:app --reload --port 8000
 
-# View dashboard
-open http://localhost:8000/docs  # FastAPI auto-docs
+# 5. Open the dashboard
+#    http://127.0.0.1:8000
+#    API docs: http://127.0.0.1:8000/docs
 ```
 
----
+## API Endpoints
 
-## Milestones
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/gold/model-perf` | Model performance metrics |
+| GET | `/api/gold/user-activity` | User login stats by tier |
+| GET | `/api/gold/conversation-stats` | Global conversation aggregates |
+| GET | `/api/gold/prompt-analytics` | Prompt category metrics |
+| GET | `/api/gold/feedback-summary` | Feedback type breakdown |
+| GET | `/api/silver/events?date=X` | Raw events with optional type filter |
+| GET | `/api/dates` | Available date partitions |
+| GET | `/api/health` | Health check |
 
-| # | Milestone | Status |
-|---|-----------|--------|
-| 0 | Event schema design and documentation | ✅ Complete |
-| 1 | Project scaffold and event simulator | 🔄 In Progress |
-| 2 | Bronze layer and ingestion pipeline | ⏳ Pending |
-| 3 | Silver layer and ETL with Polars | ⏳ Pending |
-| 4 | Gold layer and business aggregations | ⏳ Pending |
-| 5 | FastAPI analytics API | ⏳ Pending |
-| 6 | Dashboard and visualization | ⏳ Pending |
+All gold endpoints accept optional `?date=YYYY-MM-DD` query parameter.
+
+## Running Tests
+
+```bash
+python -m pytest src/tests/ -v
+```
+
+## Gold Tables
+
+| Table | Grain | Key Metrics |
+|-------|-------|-------------|
+| `model_perf` | (model_name, model_provider) | request_count, success/error/timeout/rate_limited counts, avg/median/p95 latency, avg TTFT, token counts |
+| `user_activity` | subscription_tier | unique_users, total_logins, successful/failed logins |
+| `conversation_stats` | date (global) | total_conversations, avg/max turns, avg duration |
+| `prompt_analytics` | prompt_category | total_prompts, total/avg input tokens, avg char count |
+| `feedback_summary` | feedback_type | count, avg_rating |
+
+## What I Learned
+
+1. **Medallion Architecture is graduated trust** — not "clean vs dirty" but three levels of data reliability, each independently rebuildable.
+2. **Parquet + DuckDB is powerful** — zero infrastructure, predicate pushdown, schema-embedded, columnar reads.
+3. **Polars for writes, DuckDB for reads** — different engines for different problems. Polars transforms, DuckDB queries.
+4. **Type systems prevent bugs** — Pydantic enums catch bad data before it reaches analytics.
+5. **Thread safety matters** — DuckDB access needs request serialization for safe concurrent API use.
+6. **Separation of concerns** — ETL (build) vs queries (serve) vs dashboard (present) are different problems with different tools.
 
 ---
 

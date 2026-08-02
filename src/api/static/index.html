@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InsightFlow — AI Observability Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-hover: #242836;
+      --border: #2e3347;
+      --text: #e4e6f0;
+      --text-muted: #8b8fa3;
+      --accent: #6c8cff;
+      --accent-dim: rgba(108, 140, 255, 0.15);
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ────────────────────────────────────────────── */
+    .header {
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+    .header h1 span { color: var(--accent); }
+    .header-controls { display: flex; gap: 12px; align-items: center; }
+    .header-controls select {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+    .status-badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    /* ── Grid ──────────────────────────────────────────────── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 20px;
+      padding: 24px 32px;
+    }
+
+    /* ── Card ───────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .card h2 {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+
+    /* ── KPI row ───────────────────────────────────────────── */
+    .kpi-row {
+      display: flex;
+      gap: 16px;
+      grid-column: 1 / -1;
+    }
+    .kpi {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+    }
+    .kpi .value {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -1px;
+    }
+    .kpi .label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .kpi.green .value { color: var(--green); }
+    .kpi.red .value { color: var(--red); }
+    .kpi.yellow .value { color: var(--yellow); }
+    .kpi.blue .value { color: var(--accent); }
+
+    /* ── Table ──────────────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      text-align: left;
+      padding: 8px 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    tbody td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr:hover { background: var(--surface-hover); }
+
+    /* ── Bar chart ──────────────────────────────────────────── */
+    .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+    .bar-row { display: flex; align-items: center; gap: 12px; }
+    .bar-label {
+      width: 120px;
+      text-align: right;
+      font-size: 13px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .bar-track {
+      flex: 1;
+      height: 24px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .bar-fill.blue { background: var(--accent); }
+    .bar-fill.green { background: var(--green); }
+    .bar-fill.yellow { background: var(--yellow); }
+    .bar-value {
+      font-size: 12px;
+      width: 50px;
+      text-align: right;
+      color: var(--text-muted);
+    }
+
+    /* ── Error / loading ─────────────────────────────────────── */
+    .error-msg {
+      color: var(--red);
+      font-size: 13px;
+      padding: 12px;
+      background: rgba(248, 113, 113, 0.1);
+      border-radius: 6px;
+    }
+    .empty-msg {
+      color: var(--text-muted);
+      font-size: 13px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    /* ── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .grid { padding: 12px; gap: 12px; }
+      .kpi-row { flex-direction: column; }
+      .header { padding: 16px; flex-direction: column; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>InsightFlow</span> Dashboard</h1>
+  <div class="header-controls">
+    <span class="status-badge" id="status">Loading...</span>
+    <select id="date-select">
+      <option value="">Latest</option>
+    </select>
+  </div>
+</div>
+
+<div class="grid">
+  <!-- KPI row -->
+  <div class="kpi-row">
+    <div class="kpi blue">
+      <div class="value" id="kpi-requests">—</div>
+      <div class="label">Total Requests</div>
+    </div>
+    <div class="kpi green">
+      <div class="value" id="kpi-success-rate">—</div>
+      <div class="label">Success Rate</div>
+    </div>
+    <div class="kpi yellow">
+      <div class="value" id="kpi-latency">—</div>
+      <div class="label">P95 Latency (ms)</div>
+    </div>
+    <div class="kpi red">
+      <div class="value" id="kpi-users">—</div>
+      <div class="label">Unique Users</div>
+    </div>
+  </div>
+
+  <!-- Model Performance -->
+  <div class="card">
+    <h2>Model Performance</h2>
+    <div id="model-perf"><div class="empty-msg">Loading...</div></div>
+  </div>
+
+  <!-- User Activity -->
+  <div class="card">
+    <h2>User Activity by Tier</h2>
+    <div id="user-activity"><div class="empty-msg">Loading...</div></div>
+  </div>
+
+  <!-- Conversation Stats -->
+  <div class="card">
+    <h2>Conversation Stats</h2>
+    <div id="conv-stats"><div class="empty-msg">Loading...</div></div>
+  </div>
+
+  <!-- Prompt Analytics -->
+  <div class="card">
+    <h2>Prompt Categories</h2>
+    <div id="prompt-analytics"><div class="empty-msg">Loading...</div></div>
+  </div>
+
+  <!-- Feedback Summary -->
+  <div class="card">
+    <h2>Feedback Summary</h2>
+    <div id="feedback-summary"><div class="empty-msg">Loading...</div></div>
+  </div>
+</div>
+
+<script>
+const BASE = window.location.origin;
+const dateSelect = document.getElementById('date-select');
+
+// ── Fetch helper ────────────────────────────────────────────
+async function fetchJSON(path) {
+  try {
+    const res = await fetch(BASE + path);
+    if (!res.ok) throw new Error(res.statusText);
+    return await res.json();
+  } catch (e) {
+    console.error('Fetch error:', path, e);
+    return null;
+  }
+}
+
+// ── Load available dates ───────────────────────────────────
+async function loadDates() {
+  const data = await fetchJSON('/api/dates');
+  if (!data || !data.dates.length) return;
+  data.dates.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d;
+    opt.textContent = d;
+    dateSelect.appendChild(opt);
+  });
+}
+
+// ── Model Performance table ──────────────────────────────────
+function renderModelPerf(rows) {
+  const el = document.getElementById('model-perf');
+  if (!rows || !rows.length) { el.innerHTML = '<div class="empty-msg">No data</div>'; return; }
+
+  el.innerHTML = `<table>
+    <thead><tr>
+      <th>Model</th><th>Provider</th><th>Requests</th><th>Success</th>
+      <th>Error</th><th>Avg Latency</th><th>P95</th>
+    </tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td><strong>${r.model_name}</strong></td>
+      <td>${r.model_provider}</td>
+      <td>${r.request_count}</td>
+      <td style="color:var(--green)">${r.success_count}</td>
+      <td style="color:${r.error_count ? 'var(--red)' : 'var(--text-muted)'}">${r.error_count}</td>
+      <td>${r.avg_latency_ms}ms</td>
+      <td>${r.p95_latency_ms}ms</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+
+  // KPIs
+  const totalReqs = rows.reduce((s, r) => s + r.request_count, 0);
+  const totalSuccess = rows.reduce((s, r) => s + r.success_count, 0);
+  const rate = totalReqs ? ((totalSuccess / totalReqs) * 100).toFixed(1) : 0;
+  const p95 = rows.length ? Math.max(...rows.map(r => r.p95_latency_ms || 0)) : 0;
+  document.getElementById('kpi-requests').textContent = totalReqs;
+  document.getElementById('kpi-success-rate').textContent = rate + '%';
+  document.getElementById('kpi-latency').textContent = p95;
+}
+
+// ── User Activity bar chart ─────────────────────────────────
+function renderUserActivity(rows) {
+  const el = document.getElementById('user-activity');
+  if (!rows || !rows.length) { el.innerHTML = '<div class="empty-msg">No data</div>'; return; }
+
+  const maxUsers = Math.max(...rows.map(r => r.unique_users), 1);
+  el.innerHTML = `<div class="bar-chart">
+    ${rows.map(r => `<div class="bar-row">
+      <span class="bar-label">${r.subscription_tier}</span>
+      <div class="bar-track">
+        <div class="bar-fill blue" style="width:${(r.unique_users / maxUsers) * 100}%"></div>
+      </div>
+      <span class="bar-value">${r.unique_users}</span>
+    </div>`).join('')}
+  </div>
+  <table style="margin-top:12px">
+    <thead><tr><th>Tier</th><th>Logins</th><th>Success</th><th>Failed</th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td><strong>${r.subscription_tier}</strong></td>
+      <td>${r.total_logins}</td>
+      <td style="color:var(--green)">${r.successful_logins}</td>
+      <td style="color:var(--red)">${r.failed_logins}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+
+  const totalUsers = rows.reduce((s, r) => s + r.unique_users, 0);
+  document.getElementById('kpi-users').textContent = totalUsers;
+}
+
+// ── Conversation Stats ───────────────────────────────────────
+function renderConvStats(rows) {
+  const el = document.getElementById('conv-stats');
+  if (!rows || !rows.length) { el.innerHTML = '<div class="empty-msg">No data</div>'; return; }
+  const r = rows[0];
+  el.innerHTML = `<table>
+    <tbody>
+      <tr><td style="color:var(--text-muted)">Total Conversations</td><td><strong>${r.total_conversations}</strong></td></tr>
+      <tr><td style="color:var(--text-muted)">Avg Turns</td><td><strong>${r.avg_turns}</strong></td></tr>
+      <tr><td style="color:var(--text-muted)">Max Turns</td><td><strong>${r.max_turns}</strong></td></tr>
+      <tr><td style="color:var(--text-muted)">Avg Duration</td><td><strong>${r.avg_duration_seconds}s</strong></td></tr>
+    </tbody>
+  </table>`;
+}
+
+// ── Prompt Analytics bar chart ───────────────────────────────
+function renderPromptAnalytics(rows) {
+  const el = document.getElementById('prompt-analytics');
+  if (!rows || !rows.length) { el.innerHTML = '<div class="empty-msg">No data</div>'; return; }
+
+  const maxVal = Math.max(...rows.map(r => r.total_prompts), 1);
+  el.innerHTML = `<div class="bar-chart">
+    ${rows.map(r => `<div class="bar-row">
+      <span class="bar-label">${r.prompt_category}</span>
+      <div class="bar-track">
+        <div class="bar-fill green" style="width:${(r.total_prompts / maxVal) * 100}%"></div>
+      </div>
+      <span class="bar-value">${r.total_prompts}</span>
+    </div>`).join('')}
+  </div>
+  <table style="margin-top:12px">
+    <thead><tr><th>Category</th><th>Prompts</th><th>Avg Tokens</th><th>Avg Chars</th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td><strong>${r.prompt_category}</strong></td>
+      <td>${r.total_prompts}</td>
+      <td>${r.avg_input_tokens}</td>
+      <td>${r.avg_char_count}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ── Feedback Summary ─────────────────────────────────────────
+function renderFeedback(rows) {
+  const el = document.getElementById('feedback-summary');
+  if (!rows || !rows.length) { el.innerHTML = '<div class="empty-msg">No data</div>'; return; }
+
+  const maxCount = Math.max(...rows.map(r => r.count), 1);
+  el.innerHTML = `<div class="bar-chart">
+    ${rows.map(r => `<div class="bar-row">
+      <span class="bar-label">${r.feedback_type}</span>
+      <div class="bar-track">
+        <div class="bar-fill yellow" style="width:${(r.count / maxCount) * 100}%"></div>
+      </div>
+      <span class="bar-value">${r.count}</span>
+    </div>`).join('')}
+  </div>
+  <table style="margin-top:12px">
+    <thead><tr><th>Type</th><th>Count</th><th>Avg Rating</th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td><strong>${r.feedback_type}</strong></td>
+      <td>${r.count}</td>
+      <td>${r.avg_rating !== null ? r.avg_rating : '—'}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ── Main load ───────────────────────────────────────────────
+async function loadDashboard() {
+  const dateParam = dateSelect.value ? `?date=${dateSelect.value}` : '';
+  document.getElementById('status').textContent = 'Loading...';
+
+  const [modelPerf, userActivity, convStats, promptAnalytics, feedback] = await Promise.all([
+    fetchJSON(`/api/gold/model-perf${dateParam}`),
+    fetchJSON(`/api/gold/user-activity${dateParam}`),
+    fetchJSON(`/api/gold/conversation-stats${dateParam}`),
+    fetchJSON(`/api/gold/prompt-analytics${dateParam}`),
+    fetchJSON(`/api/gold/feedback-summary${dateParam}`),
+  ]);
+
+  renderModelPerf(modelPerf);
+  renderUserActivity(userActivity);
+  renderConvStats(convStats);
+  renderPromptAnalytics(promptAnalytics);
+  renderFeedback(feedback);
+
+  document.getElementById('status').textContent = 'Live';
+}
+
+// ── Init ─────────────────────────────────────────────────────
+loadDates().then(() => loadDashboard());
+dateSelect.addEventListener('change', loadDashboard);
+</script>
+
+</body>
+</html>
