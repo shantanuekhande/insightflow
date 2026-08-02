@@ -4,7 +4,7 @@ import json
 import random
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 from uuid import uuid4
 
 from src.simulator.config import SimulatorConfig
@@ -39,11 +39,18 @@ _MODEL_NAMES = (
     "llama-3.1-70b",
 )
 
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
 
 def generate_events(config: SimulatorConfig) -> int:
     """Generate simulator events and write them to the landing zone."""
 
-    landing_root = _landing_root()
+    landing_root = _PROJECT_ROOT / "data" / "landing"
     landing_root.mkdir(parents=True, exist_ok=True)
 
     user_pool_size = max(1, config.total_events // _DEFAULT_EVENTS_PER_USER)
@@ -74,7 +81,14 @@ def generate_events(config: SimulatorConfig) -> int:
 
 
 def main() -> int:
-    return generate_events(SimulatorConfig())
+    count = generate_events(SimulatorConfig())
+    print(f"Generated {count} events")
+    return count
+
+
+# ---------------------------------------------------------------------------
+# Session builder
+# ---------------------------------------------------------------------------
 
 
 def _build_session(persona: UserPersona, config: SimulatorConfig) -> list[Any]:
@@ -191,6 +205,11 @@ def _build_session(persona: UserPersona, config: SimulatorConfig) -> list[Any]:
     return events
 
 
+# ---------------------------------------------------------------------------
+# File I/O
+# ---------------------------------------------------------------------------
+
+
 def _write_event_record(
     landing_root: Path,
     sequence_number: int,
@@ -246,8 +265,9 @@ def _write_text(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def _landing_root() -> Path:
-    return Path(__file__).resolve().parents[2] / "data" / "landing"
+# ---------------------------------------------------------------------------
+# Timestamp helpers
+# ---------------------------------------------------------------------------
 
 
 def _session_start(target_date: date) -> datetime:
@@ -267,6 +287,11 @@ def _with_timestamp(event: Any, timestamp: datetime) -> Any:
     return event.__class__(**payload)
 
 
+# ---------------------------------------------------------------------------
+# Noise injection
+# ---------------------------------------------------------------------------
+
+
 def _corrupt_json(payload: str) -> str:
     corruption = random.choice(("missing_field", "truncate", "garbage"))
     if corruption == "truncate":
@@ -283,6 +308,11 @@ def _corrupt_json(payload: str) -> str:
     if removable_keys:
         parsed.pop(random.choice(removable_keys), None)
     return json.dumps(parsed, separators=(",", ":"), sort_keys=True)
+
+
+# ---------------------------------------------------------------------------
+# Random pickers (weighted distributions)
+# ---------------------------------------------------------------------------
 
 
 def _pick_login_status(persona: UserPersona) -> LoginStatus:
@@ -391,7 +421,7 @@ def _pick_model_response_status(persona: UserPersona) -> ModelResponseStatus:
     )[0]
 
 
-def _pick_error_code(status: ModelResponseStatus) -> ErrorCode | None:
+def _pick_error_code(status: ModelResponseStatus) -> Optional[ErrorCode]:
     if status == ModelResponseStatus.SUCCESS:
         return None
     return random.choices(
@@ -436,9 +466,17 @@ def _pick_feedback_type(persona: UserPersona) -> FeedbackType:
     )[0]
 
 
-def _pick_rating_value(feedback_type: FeedbackType) -> int | None:
+def _pick_rating_value(feedback_type: FeedbackType) -> Optional[int]:
     if feedback_type != FeedbackType.STAR_RATING:
         return None
     return random.choices(
         population=[1, 2, 3, 4, 5], weights=(10, 10, 20, 25, 35), k=1
     )[0]
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    main()
