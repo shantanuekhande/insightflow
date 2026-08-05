@@ -1,435 +1,713 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InsightFlow — AI Observability Dashboard</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InsightFlow V2 — AI Observability Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e4e4e7;
+    --text-dim: #71717a;
+    --accent: #3b82f6;
+    --orange: #f97316;
+    --red: #ef4444;
+    --purple: #a855f7;
+    --green: #22c55e;
+    --yellow: #eab308;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+  .header h1 span { color: var(--accent); }
+  .header-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .header-controls label {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .header-controls input[type="date"] {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .header-controls button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .header-controls button:hover { opacity: 0.85; }
 
-    :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --surface-hover: #242836;
-      --border: #2e3347;
-      --text: #e4e6f0;
-      --text-muted: #8b8fa3;
-      --accent: #6c8cff;
-      --accent-dim: rgba(108, 140, 255, 0.15);
-      --green: #34d399;
-      --red: #f87171;
-      --yellow: #fbbf24;
-      --radius: 10px;
-    }
+  /* KPI row */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    padding: 20px 24px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .kpi-card .label {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .kpi-card .value {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .kpi-card .sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
+  /* Panel grid */
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 16px;
+    padding: 0 24px 24px;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+  }
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .panel-header h2 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+  }
+  .panel-header .subtitle {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 3px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    color: white;
+  }
+  .badge-q1 { background: var(--orange); }
+  .badge-q2 { background: var(--red); }
+  .badge-q3 { background: var(--purple); }
+  .badge-q4 { background: var(--accent); }
+  .badge-q5 { background: var(--green); }
 
-    /* ── Header ────────────────────────────────────────────── */
-    .header {
-      padding: 20px 32px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .header h1 {
-      font-size: 20px;
-      font-weight: 600;
-      letter-spacing: -0.5px;
-    }
-    .header h1 span { color: var(--accent); }
-    .header-controls { display: flex; gap: 12px; align-items: center; }
-    .header-controls select {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-size: 13px;
-    }
-    .status-badge {
-      font-size: 12px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      background: var(--accent-dim);
-      color: var(--accent);
-    }
+  /* Chart containers */
+  .chart-wrap { position: relative; width: 100%; height: 300px; }
 
-    /* ── Grid ──────────────────────────────────────────────── */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-      gap: 20px;
-      padding: 24px 32px;
-    }
+  /* Heatmap */
+  .heatmap-container {
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .heatmap-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 11px;
+  }
+  .heatmap-table th {
+    padding: 4px 6px;
+    font-size: 10px;
+    color: var(--text-dim);
+    font-weight: 500;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+  }
+  .heatmap-table td {
+    width: 32px;
+    height: 28px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 500;
+    border-radius: 3px;
+    transition: opacity 0.15s;
+  }
+  .heatmap-table td:hover { opacity: 0.75; }
+  .heatmap-table .day-label {
+    text-align: right;
+    padding-right: 8px;
+    color: var(--text-dim);
+    font-weight: 500;
+    font-size: 11px;
+    width: 36px;
+  }
+  .heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .heatmap-legend .gradient-bar {
+    width: 120px;
+    height: 10px;
+    border-radius: 3px;
+  }
 
-    /* ── Card ───────────────────────────────────────────────── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-    }
-    .card h2 {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 16px;
-    }
+  /* Power users table */
+  .power-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .power-table th {
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+  }
+  .power-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .power-table tr:last-child td { border-bottom: none; }
+  .power-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .tier-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .tier-free { background: #374151; color: #9ca3af; }
+  .tier-pro { background: #1e3a5f; color: #60a5fa; }
+  .tier-enterprise { background: #3b1f4a; color: #c084fc; }
 
-    /* ── KPI row ───────────────────────────────────────────── */
-    .kpi-row {
-      display: flex;
-      gap: 16px;
-      grid-column: 1 / -1;
-    }
-    .kpi {
-      flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      text-align: center;
-    }
-    .kpi .value {
-      font-size: 32px;
-      font-weight: 700;
-      letter-spacing: -1px;
-    }
-    .kpi .label {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-    .kpi.green .value { color: var(--green); }
-    .kpi.red .value { color: var(--red); }
-    .kpi.yellow .value { color: var(--yellow); }
-    .kpi.blue .value { color: var(--accent); }
+  .empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
 
-    /* ── Table ──────────────────────────────────────────────── */
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    thead th {
-      text-align: left;
-      padding: 8px 12px;
-      color: var(--text-muted);
-      font-weight: 500;
-      border-bottom: 1px solid var(--border);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    tbody td {
-      padding: 8px 12px;
-      border-bottom: 1px solid var(--border);
-    }
-    tbody tr:hover { background: var(--surface-hover); }
-
-    /* ── Bar chart ──────────────────────────────────────────── */
-    .bar-chart { display: flex; flex-direction: column; gap: 8px; }
-    .bar-row { display: flex; align-items: center; gap: 12px; }
-    .bar-label {
-      width: 120px;
-      text-align: right;
-      font-size: 13px;
-      color: var(--text-muted);
-      flex-shrink: 0;
-    }
-    .bar-track {
-      flex: 1;
-      height: 24px;
-      background: var(--bg);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .bar-fill {
-      height: 100%;
-      border-radius: 4px;
-      transition: width 0.5s ease;
-    }
-    .bar-fill.blue { background: var(--accent); }
-    .bar-fill.green { background: var(--green); }
-    .bar-fill.yellow { background: var(--yellow); }
-    .bar-value {
-      font-size: 12px;
-      width: 50px;
-      text-align: right;
-      color: var(--text-muted);
-    }
-
-    /* ── Error / loading ─────────────────────────────────────── */
-    .error-msg {
-      color: var(--red);
-      font-size: 13px;
-      padding: 12px;
-      background: rgba(248, 113, 113, 0.1);
-      border-radius: 6px;
-    }
-    .empty-msg {
-      color: var(--text-muted);
-      font-size: 13px;
-      padding: 12px;
-      text-align: center;
-    }
-
-    /* ── Responsive ─────────────────────────────────────────── */
-    @media (max-width: 600px) {
-      .grid { padding: 12px; gap: 12px; }
-      .kpi-row { flex-direction: column; }
-      .header { padding: 16px; flex-direction: column; gap: 12px; }
-    }
-  </style>
+  @media (max-width: 900px) {
+    .kpi-row { grid-template-columns: repeat(3, 1fr); }
+    .panels { grid-template-columns: 1fr; }
+  }
+</style>
 </head>
 <body>
 
 <div class="header">
-  <h1><span>InsightFlow</span> Dashboard</h1>
+  <h1>Insight<span>Flow</span> V2</h1>
   <div class="header-controls">
-    <span class="status-badge" id="status">Loading...</span>
-    <select id="date-select">
-      <option value="">Latest</option>
-    </select>
+    <label>From</label>
+    <input type="date" id="fromDate">
+    <label>To</label>
+    <input type="date" id="toDate">
+    <button onclick="loadDashboard()">Refresh</button>
   </div>
 </div>
 
-<div class="grid">
-  <!-- KPI row -->
-  <div class="kpi-row">
-    <div class="kpi blue">
-      <div class="value" id="kpi-requests">—</div>
-      <div class="label">Total Requests</div>
+<!-- 5 KPI Cards -->
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="label">Total Cost</div>
+    <div class="value" id="kpi-cost">$—</div>
+    <div class="sub" id="kpi-cost-sub">across selected range</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">Total Requests</div>
+    <div class="value" id="kpi-requests">—</div>
+    <div class="sub" id="kpi-requests-sub">model invocations</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">Success Rate</div>
+    <div class="value" id="kpi-success">—%</div>
+    <div class="sub" id="kpi-success-sub">avg across models</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">Avg Rating</div>
+    <div class="value" id="kpi-rating">—</div>
+    <div class="sub" id="kpi-rating-sub">from user feedback</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">Avg Latency</div>
+    <div class="value" id="kpi-latency">—ms</div>
+    <div class="sub" id="kpi-latency-sub">P50 response time</div>
+  </div>
+</div>
+
+<!-- 4 Panels -->
+<div class="panels">
+
+  <!-- Panel 1: Cost Driver Breakdown -->
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Cost Driver Breakdown</h2>
+        <div class="subtitle">Daily inference cost, broken down by model</div>
+      </div>
+      <span class="badge badge-q1">Q1</span>
     </div>
-    <div class="kpi green">
-      <div class="value" id="kpi-success-rate">—</div>
-      <div class="label">Success Rate</div>
-    </div>
-    <div class="kpi yellow">
-      <div class="value" id="kpi-latency">—</div>
-      <div class="label">P95 Latency (ms)</div>
-    </div>
-    <div class="kpi red">
-      <div class="value" id="kpi-users">—</div>
-      <div class="label">Unique Users</div>
+    <div class="chart-wrap">
+      <canvas id="costChart"></canvas>
     </div>
   </div>
 
-  <!-- Model Performance -->
-  <div class="card">
-    <h2>Model Performance</h2>
-    <div id="model-perf"><div class="empty-msg">Loading...</div></div>
+  <!-- Panel 2: Latency Heatmap -->
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Latency Heatmap</h2>
+        <div class="subtitle">P95 latency by hour and day-of-week</div>
+      </div>
+      <span class="badge badge-q3">Q3</span>
+    </div>
+    <div class="heatmap-container" id="heatmapContainer">
+      <div class="empty-state">Loading heatmap...</div>
+    </div>
   </div>
 
-  <!-- User Activity -->
-  <div class="card">
-    <h2>User Activity by Tier</h2>
-    <div id="user-activity"><div class="empty-msg">Loading...</div></div>
+  <!-- Panel 3: Power Users -->
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Top Resource Consumers</h2>
+        <div class="subtitle">Users ranked by total inference cost</div>
+      </div>
+      <span class="badge badge-q4">Q4</span>
+    </div>
+    <div id="powerUsersContainer">
+      <div class="empty-state">Loading users...</div>
+    </div>
   </div>
 
-  <!-- Conversation Stats -->
-  <div class="card">
-    <h2>Conversation Stats</h2>
-    <div id="conv-stats"><div class="empty-msg">Loading...</div></div>
+  <!-- Panel 4: Feedback vs Latency -->
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Feedback vs. Latency</h2>
+        <div class="subtitle">Average user rating by response speed</div>
+      </div>
+      <span class="badge badge-q5">Q5</span>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="correlationChart"></canvas>
+    </div>
   </div>
 
-  <!-- Prompt Analytics -->
-  <div class="card">
-    <h2>Prompt Categories</h2>
-    <div id="prompt-analytics"><div class="empty-msg">Loading...</div></div>
-  </div>
-
-  <!-- Feedback Summary -->
-  <div class="card">
-    <h2>Feedback Summary</h2>
-    <div id="feedback-summary"><div class="empty-msg">Loading...</div></div>
-  </div>
 </div>
 
 <script>
-const BASE = window.location.origin;
-const dateSelect = document.getElementById('date-select');
+// ---------------------------------------------------------------------------
+// Globals
+// ---------------------------------------------------------------------------
+const API = '';
+let costChart = null;
+let correlationChart = null;
 
-// ── Fetch helper ────────────────────────────────────────────
-async function fetchJSON(path) {
+// Chart.js defaults for dark theme
+Chart.defaults.color = '#71717a';
+Chart.defaults.borderColor = '#2a2d3a';
+Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+(async function init() {
+  const dates = await fetchJSON('/api/dates');
+  if (!dates.dates || dates.dates.length === 0) return;
+  const sorted = dates.dates.sort();
+  const from = sorted[0];
+  const to = sorted[sorted.length - 1];
+  document.getElementById('fromDate').value = from;
+  document.getElementById('toDate').value = to;
+  await loadDashboard();
+})();
+
+async function loadDashboard() {
+  const from = document.getElementById('fromDate').value;
+  const to = document.getElementById('toDate').value;
+  if (!from || !to) return;
+
+  const base = `from_date=${from}&to_date=${to}`;
+
+  // Fire all requests in parallel
+  const [kpis, modelPerf, heatmap, powerUsers, correlation] = await Promise.all([
+    fetchJSON(`/api/gold/kpis?${base}`),
+    fetchJSON(`/api/gold/model-perf/trend?${base}`),
+    fetchJSON(`/api/gold/latency-heatmap?${base}`),
+    fetchJSON(`/api/gold/user-activity?date=${to}&top_n=20`),
+    fetchJSON(`/api/gold/feedback-correlation?${base}`),
+  ]);
+
+  renderKPIs(kpis);
+  renderCostChart(modelPerf);
+  renderHeatmap(heatmap);
+  renderPowerUsers(powerUsers);
+  renderCorrelationChart(correlation);
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+async function fetchJSON(url) {
   try {
-    const res = await fetch(BASE + path);
-    if (!res.ok) throw new Error(res.statusText);
+    const res = await fetch(API + url);
     return await res.json();
   } catch (e) {
-    console.error('Fetch error:', path, e);
-    return null;
+    console.error('Fetch failed:', url, e);
+    return [];
   }
 }
 
-// ── Load available dates ───────────────────────────────────
-async function loadDates() {
-  const data = await fetchJSON('/api/dates');
-  if (!data || !data.dates.length) return;
-  data.dates.forEach(d => {
-    const opt = document.createElement('option');
-    opt.value = d;
-    opt.textContent = d;
-    dateSelect.appendChild(opt);
+function fmt(n, decimals = 1) {
+  if (n == null || isNaN(n)) return '—';
+  return Number(n).toLocaleString(undefined, { maximumFractionDigits: decimals });
+}
+
+// ---------------------------------------------------------------------------
+// KPI Cards
+// ---------------------------------------------------------------------------
+function renderKPIs(kpis) {
+  if (!Array.isArray(kpis) || kpis.length === 0) return;
+
+  // Sum across all days in range
+  let totalCost = 0, totalReqs = 0, totalFeedback = 0;
+  let successRates = [], latencies = [], ratings = [];
+
+  kpis.forEach(row => {
+    totalCost += (row.total_cost_usd || 0);
+    totalReqs += (row.total_invocations || 0);
+    totalFeedback += (row.total_feedback || 0);
+    if (row.avg_success_rate != null) successRates.push(row.avg_success_rate);
+    if (row.avg_latency != null) latencies.push(row.avg_latency);
+    if (row.avg_rating != null) ratings.push(row.avg_rating);
+  });
+
+  const avgSuccess = successRates.length ? successRates.reduce((a, b) => a + b, 0) / successRates.length : null;
+  const avgLatency = latencies.length ? latencies.reduce((a, b) => a + b, 0) / latencies.length : null;
+  const avgRating = ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null;
+
+  document.getElementById('kpi-cost').textContent = '$' + fmt(totalCost, 2);
+  document.getElementById('kpi-cost-sub').textContent = `${kpis.length} days in range`;
+  document.getElementById('kpi-requests').textContent = fmt(totalReqs, 0);
+  document.getElementById('kpi-success').textContent = avgSuccess != null ? fmt(avgSuccess, 1) + '%' : '—%';
+  document.getElementById('kpi-rating').textContent = avgRating != null ? fmt(avgRating, 2) : '—';
+  document.getElementById('kpi-rating-sub').textContent = `${fmt(totalFeedback, 0)} ratings`;
+  document.getElementById('kpi-latency').textContent = avgLatency != null ? fmt(avgLatency, 0) + 'ms' : '—ms';
+}
+
+// ---------------------------------------------------------------------------
+// Panel 1: Cost Driver Line Chart
+// ---------------------------------------------------------------------------
+const MODEL_COLORS = {
+  'gpt-4.1-mini':     { line: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
+  'gpt-4.1':          { line: '#3b82f6', bg: 'rgba(59,130,246,0.08)' },
+  'claude-3.7-sonnet': { line: '#f97316', bg: 'rgba(249,115,22,0.08)' },
+  'mistral-large':    { line: '#a855f7', bg: 'rgba(168,85,247,0.08)' },
+  'llama-3.1-70b':    { line: '#eab308', bg: 'rgba(234,179,8,0.08)' },
+};
+const DEFAULT_COLOR = { line: '#6b7280', bg: 'rgba(107,114,128,0.08)' };
+
+function renderCostChart(data) {
+  if (!Array.isArray(data) || data.length === 0) return;
+
+  // Pivot: { model_name → { date → cost } }
+  const modelDates = {};
+  const allDates = new Set();
+  data.forEach(row => {
+    const model = row.model_name;
+    const d = row.event_date;
+    if (!modelDates[model]) modelDates[model] = {};
+    modelDates[model][d] = row.total_cost_usd || 0;
+    allDates.add(d);
+  });
+
+  const sortedDates = [...allDates].sort();
+  const labels = sortedDates.map(d => {
+    const parts = d.split('-');
+    return parts[1] + '/' + parts[2]; // MM/DD
+  });
+
+  const datasets = Object.keys(modelDates).map(model => {
+    const colors = MODEL_COLORS[model] || DEFAULT_COLOR;
+    return {
+      label: model,
+      data: sortedDates.map(d => modelDates[model][d] || 0),
+      borderColor: colors.line,
+      backgroundColor: colors.bg,
+      fill: true,
+      tension: 0.3,
+      pointRadius: 2,
+      pointHoverRadius: 5,
+      borderWidth: 2,
+    };
+  });
+
+  if (costChart) costChart.destroy();
+  costChart = new Chart(document.getElementById('costChart'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: $${(ctx.parsed.y || 0).toFixed(2)}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { callback: v => '$' + v },
+          title: { display: true, text: 'Cost (USD)', font: { size: 11 } }
+        },
+        x: {
+          ticks: { maxRotation: 45, font: { size: 10 } }
+        }
+      }
+    }
   });
 }
 
-// ── Model Performance table ──────────────────────────────────
-function renderModelPerf(rows) {
-  const el = document.getElementById('model-perf');
-  if (!rows || !rows.length) { el.innerHTML = '<div class="empty-msg">No data</div>'; return; }
+// ---------------------------------------------------------------------------
+// Panel 2: Latency Heatmap (HTML table with colored cells)
+// ---------------------------------------------------------------------------
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  el.innerHTML = `<table>
-    <thead><tr>
-      <th>Model</th><th>Provider</th><th>Requests</th><th>Success</th>
-      <th>Error</th><th>Avg Latency</th><th>P95</th>
-    </tr></thead>
-    <tbody>${rows.map(r => `<tr>
-      <td><strong>${r.model_name}</strong></td>
-      <td>${r.model_provider}</td>
-      <td>${r.request_count}</td>
-      <td style="color:var(--green)">${r.success_count}</td>
-      <td style="color:${r.error_count ? 'var(--red)' : 'var(--text-muted)'}">${r.error_count}</td>
-      <td>${r.avg_latency_ms}ms</td>
-      <td>${r.p95_latency_ms}ms</td>
-    </tr>`).join('')}</tbody>
-  </table>`;
+function renderHeatmap(data) {
+  const container = document.getElementById('heatmapContainer');
+  if (!Array.isArray(data) || data.length === 0) {
+    container.innerHTML = '<div class="empty-state">No latency data available</div>';
+    return;
+  }
 
-  // KPIs
-  const totalReqs = rows.reduce((s, r) => s + r.request_count, 0);
-  const totalSuccess = rows.reduce((s, r) => s + r.success_count, 0);
-  const rate = totalReqs ? ((totalSuccess / totalReqs) * 100).toFixed(1) : 0;
-  const p95 = rows.length ? Math.max(...rows.map(r => r.p95_latency_ms || 0)) : 0;
-  document.getElementById('kpi-requests').textContent = totalReqs;
-  document.getElementById('kpi-success-rate').textContent = rate + '%';
-  document.getElementById('kpi-latency').textContent = p95;
+  // Build 7x24 grid: grid[day_of_week][hour] = p95_latency
+  const grid = {};
+  let minLat = Infinity, maxLat = -Infinity;
+  data.forEach(row => {
+    const dow = row.day_of_week;
+    const hr = row.hour;
+    if (grid[dow] === undefined) grid[dow] = {};
+    grid[dow][hr] = row.p95_latency || 0;
+    if (row.p95_latency < minLat) minLat = row.p95_latency;
+    if (row.p95_latency > maxLat) maxLat = row.p95_latency;
+  });
+
+  if (minLat === maxLat) maxLat = minLat + 1;
+
+  function latencyToColor(val) {
+    const ratio = Math.min(1, Math.max(0, (val - minLat) / (maxLat - minLat)));
+    // Green → Yellow → Red
+    if (ratio < 0.5) {
+      const r = Math.round(255 * (ratio * 2));
+      const g = Math.round(200 + 55 * (1 - ratio * 2));
+      return `rgb(${r}, ${g}, 60)`;
+    } else {
+      const r2 = (ratio - 0.5) * 2;
+      const r = 255;
+      const g = Math.round(200 * (1 - r2));
+      return `rgb(${r}, ${g}, 50)`;
+    }
+  }
+
+  let html = '<table class="heatmap-table"><thead><tr><th></th>';
+  for (let h = 0; h < 24; h++) {
+    html += `<th>${String(h).padStart(2, '0')}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+
+  // Render Mon-Sun (DuckDB dow: 0=Sun, 1=Mon, ..., 6=Sat)
+  for (let dow = 1; dow <= 6; dow++) {
+    html += `<tr><td class="day-label">${DAY_LABELS[dow]}</td>`;
+    for (let h = 0; h < 24; h++) {
+      const val = (grid[dow] && grid[dow][h]) || 0;
+      const color = val > 0 ? latencyToColor(val) : '#1a1d27';
+      const textColor = val > 0 ? (val > (minLat + maxLat) / 2 ? '#fff' : '#111') : '#555';
+      html += `<td style="background:${color};color:${textColor}">${val > 0 ? Math.round(val) : ''}</td>`;
+    }
+    html += '</tr>';
+  }
+  // Sunday
+  html += `<tr><td class="day-label">${DAY_LABELS[0]}</td>`;
+  for (let h = 0; h < 24; h++) {
+    const val = (grid[0] && grid[0][h]) || 0;
+    const color = val > 0 ? latencyToColor(val) : '#1a1d27';
+    const textColor = val > 0 ? (val > (minLat + maxLat) / 2 ? '#fff' : '#111') : '#555';
+    html += `<td style="background:${color};color:${textColor}">${val > 0 ? Math.round(val) : ''}</td>`;
+  }
+  html += '</tr></tbody></table>';
+
+  html += `<div class="heatmap-legend">
+    <span>${Math.round(minLat)}ms</span>
+    <div class="gradient-bar" style="background:linear-gradient(to right, rgb(0,200,60), rgb(255,200,50), rgb(255,50,50))"></div>
+    <span>${Math.round(maxLat)}ms</span>
+  </div>`;
+
+  container.innerHTML = html;
 }
 
-// ── User Activity bar chart ─────────────────────────────────
-function renderUserActivity(rows) {
-  const el = document.getElementById('user-activity');
-  if (!rows || !rows.length) { el.innerHTML = '<div class="empty-msg">No data</div>'; return; }
+// ---------------------------------------------------------------------------
+// Panel 3: Power Users Table
+// ---------------------------------------------------------------------------
+function renderPowerUsers(data) {
+  const container = document.getElementById('powerUsersContainer');
+  if (!Array.isArray(data) || data.length === 0) {
+    container.innerHTML = '<div class="empty-state">No user data available</div>';
+    return;
+  }
 
-  const maxUsers = Math.max(...rows.map(r => r.unique_users), 1);
-  el.innerHTML = `<div class="bar-chart">
-    ${rows.map(r => `<div class="bar-row">
-      <span class="bar-label">${r.subscription_tier}</span>
-      <div class="bar-track">
-        <div class="bar-fill blue" style="width:${(r.unique_users / maxUsers) * 100}%"></div>
-      </div>
-      <span class="bar-value">${r.unique_users}</span>
-    </div>`).join('')}
-  </div>
-  <table style="margin-top:12px">
-    <thead><tr><th>Tier</th><th>Logins</th><th>Success</th><th>Failed</th></tr></thead>
-    <tbody>${rows.map(r => `<tr>
-      <td><strong>${r.subscription_tier}</strong></td>
-      <td>${r.total_logins}</td>
-      <td style="color:var(--green)">${r.successful_logins}</td>
-      <td style="color:var(--red)">${r.failed_logins}</td>
-    </tr>`).join('')}</tbody>
-  </table>`;
+  let html = '<table class="power-table"><thead><tr>';
+  html += '<th>#</th><th>User</th><th>Tier</th><th>Requests</th><th>Sessions</th>';
+  html += '<th>Tokens</th><th>Cost</th>';
+  html += '</tr></thead><tbody>';
 
-  const totalUsers = rows.reduce((s, r) => s + r.unique_users, 0);
-  document.getElementById('kpi-users').textContent = totalUsers;
+  data.forEach((row, i) => {
+    const tier = (row.subscription_tier || 'free').toLowerCase();
+    const tierClass = tier === 'enterprise' ? 'tier-enterprise' : tier === 'pro' ? 'tier-pro' : 'tier-free';
+    const tokens = ((row.total_input_tokens || 0) + (row.total_output_tokens || 0));
+    const tokensK = tokens >= 1000 ? (tokens / 1000).toFixed(1) + 'K' : tokens;
+    html += `<tr>
+      <td>${i + 1}</td>
+      <td style="font-family:monospace;font-size:12px">${row.user_id ? row.user_id.substring(0, 12) : '—'}</td>
+      <td><span class="tier-badge ${tierClass}">${tier}</span></td>
+      <td>${fmt(row.total_requests, 0)}</td>
+      <td>${fmt(row.session_count, 0)}</td>
+      <td>${tokensK}</td>
+      <td style="font-weight:600">$${row.total_cost_usd != null ? row.total_cost_usd.toFixed(2) : '—'}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
 }
 
-// ── Conversation Stats ───────────────────────────────────────
-function renderConvStats(rows) {
-  const el = document.getElementById('conv-stats');
-  if (!rows || !rows.length) { el.innerHTML = '<div class="empty-msg">No data</div>'; return; }
-  const r = rows[0];
-  el.innerHTML = `<table>
-    <tbody>
-      <tr><td style="color:var(--text-muted)">Total Conversations</td><td><strong>${r.total_conversations}</strong></td></tr>
-      <tr><td style="color:var(--text-muted)">Avg Turns</td><td><strong>${r.avg_turns}</strong></td></tr>
-      <tr><td style="color:var(--text-muted)">Max Turns</td><td><strong>${r.max_turns}</strong></td></tr>
-      <tr><td style="color:var(--text-muted)">Avg Duration</td><td><strong>${r.avg_duration_seconds}s</strong></td></tr>
-    </tbody>
-  </table>`;
+// ---------------------------------------------------------------------------
+// Panel 4: Feedback vs. Latency Bar Chart
+// ---------------------------------------------------------------------------
+const BUCKET_COLORS = {
+  'Fast (<500ms)':      { bg: 'rgba(34,197,94,0.7)',  border: '#22c55e' },
+  'Medium (500ms-1.5s)': { bg: 'rgba(234,179,8,0.7)',  border: '#eab308' },
+  'Slow (>1.5s)':       { bg: 'rgba(239,68,68,0.7)',  border: '#ef4444' },
+};
+
+function renderCorrelationChart(data) {
+  if (!Array.isArray(data) || data.length === 0) return;
+
+  // Order: Fast, Medium, Slow
+  const order = ['Fast (<500ms)', 'Medium (500ms-1.5s)', 'Slow (>1.5s)'];
+  const sorted = data.sort((a, b) => order.indexOf(a.latency_bucket) - order.indexOf(b.latency_bucket));
+
+  const labels = sorted.map(r => {
+    const bucket = r.latency_bucket || 'Unknown';
+    // Extract short label
+    return bucket.split('(')[0].trim();
+  });
+  const avgRatings = sorted.map(r => r.avg_rating || 0);
+  const sampleCounts = sorted.map(r => r.sample_count || 0);
+
+  const bgColors = sorted.map(r => (BUCKET_COLORS[r.latency_bucket] || BUCKET_COLORS['Medium (500ms-1.5s)']).bg);
+  const borderColors = sorted.map(r => (BUCKET_COLORS[r.latency_bucket] || BUCKET_COLORS['Medium (500ms-1.5s)']).border);
+
+  if (correlationChart) correlationChart.destroy();
+  correlationChart = new Chart(document.getElementById('correlationChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Avg Rating',
+        data: avgRatings,
+        backgroundColor: bgColors,
+        borderColor: borderColors,
+        borderWidth: 1.5,
+        borderRadius: 6,
+        barPercentage: 0.55,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            afterLabel: ctx => `Samples: ${sampleCounts[ctx.dataIndex]}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 5,
+          ticks: { stepSize: 1 },
+          title: { display: true, text: 'Avg Rating (1-5)', font: { size: 11 } }
+        },
+        x: {
+          grid: { display: false },
+          title: { display: true, text: 'Response Speed', font: { size: 11 } }
+        }
+      }
+    }
+  });
 }
-
-// ── Prompt Analytics bar chart ───────────────────────────────
-function renderPromptAnalytics(rows) {
-  const el = document.getElementById('prompt-analytics');
-  if (!rows || !rows.length) { el.innerHTML = '<div class="empty-msg">No data</div>'; return; }
-
-  const maxVal = Math.max(...rows.map(r => r.total_prompts), 1);
-  el.innerHTML = `<div class="bar-chart">
-    ${rows.map(r => `<div class="bar-row">
-      <span class="bar-label">${r.prompt_category}</span>
-      <div class="bar-track">
-        <div class="bar-fill green" style="width:${(r.total_prompts / maxVal) * 100}%"></div>
-      </div>
-      <span class="bar-value">${r.total_prompts}</span>
-    </div>`).join('')}
-  </div>
-  <table style="margin-top:12px">
-    <thead><tr><th>Category</th><th>Prompts</th><th>Avg Tokens</th><th>Avg Chars</th></tr></thead>
-    <tbody>${rows.map(r => `<tr>
-      <td><strong>${r.prompt_category}</strong></td>
-      <td>${r.total_prompts}</td>
-      <td>${r.avg_input_tokens}</td>
-      <td>${r.avg_char_count}</td>
-    </tr>`).join('')}</tbody>
-  </table>`;
-}
-
-// ── Feedback Summary ─────────────────────────────────────────
-function renderFeedback(rows) {
-  const el = document.getElementById('feedback-summary');
-  if (!rows || !rows.length) { el.innerHTML = '<div class="empty-msg">No data</div>'; return; }
-
-  const maxCount = Math.max(...rows.map(r => r.count), 1);
-  el.innerHTML = `<div class="bar-chart">
-    ${rows.map(r => `<div class="bar-row">
-      <span class="bar-label">${r.feedback_type}</span>
-      <div class="bar-track">
-        <div class="bar-fill yellow" style="width:${(r.count / maxCount) * 100}%"></div>
-      </div>
-      <span class="bar-value">${r.count}</span>
-    </div>`).join('')}
-  </div>
-  <table style="margin-top:12px">
-    <thead><tr><th>Type</th><th>Count</th><th>Avg Rating</th></tr></thead>
-    <tbody>${rows.map(r => `<tr>
-      <td><strong>${r.feedback_type}</strong></td>
-      <td>${r.count}</td>
-      <td>${r.avg_rating !== null ? r.avg_rating : '—'}</td>
-    </tr>`).join('')}</tbody>
-  </table>`;
-}
-
-// ── Main load ───────────────────────────────────────────────
-async function loadDashboard() {
-  const dateParam = dateSelect.value ? `?date=${dateSelect.value}` : '';
-  document.getElementById('status').textContent = 'Loading...';
-
-  const [modelPerf, userActivity, convStats, promptAnalytics, feedback] = await Promise.all([
-    fetchJSON(`/api/gold/model-perf${dateParam}`),
-    fetchJSON(`/api/gold/user-activity${dateParam}`),
-    fetchJSON(`/api/gold/conversation-stats${dateParam}`),
-    fetchJSON(`/api/gold/prompt-analytics${dateParam}`),
-    fetchJSON(`/api/gold/feedback-summary${dateParam}`),
-  ]);
-
-  renderModelPerf(modelPerf);
-  renderUserActivity(userActivity);
-  renderConvStats(convStats);
-  renderPromptAnalytics(promptAnalytics);
-  renderFeedback(feedback);
-
-  document.getElementById('status').textContent = 'Live';
-}
-
-// ── Init ─────────────────────────────────────────────────────
-loadDates().then(() => loadDashboard());
-dateSelect.addEventListener('change', loadDashboard);
 </script>
-
 </body>
 </html>

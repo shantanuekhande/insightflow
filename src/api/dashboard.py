@@ -1,23 +1,19 @@
-"""Serve a single-page analytics dashboard from FastAPI.
-
-Design philosophy:
-  - Zero build step. No React/Vue/Svelte. One HTML file with inline JS.
-  - Dashboard calls the same /api/* endpoints the external clients use.
-  - This proves the API is the single source of truth — dashboard is just a consumer.
-"""
-
+"""Dashboard router — serves the HTML dashboard at /."""
 from __future__ import annotations
 
-from pathlib import Path
-
+import pathlib
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 
 router = APIRouter()
 
-_DASHBOARD_DIR = Path(__file__).parent / "static"
+_STATIC_DIR = pathlib.Path(__file__).parent / "static"
 
 
 @router.get("/", response_class=HTMLResponse)
-def serve_dashboard():
-    return (_DASHBOARD_DIR / "index.html").read_text(encoding="utf-8")
+async def dashboard():
+    """Serve the main dashboard HTML."""
+    index_path = _STATIC_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path), media_type="text/html")
+    return HTMLResponse("<h1>InsightFlow Dashboard</h1><p>index.html not found in static/</p>")

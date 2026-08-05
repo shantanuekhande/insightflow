@@ -4,7 +4,6 @@ import json
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 
 @dataclass
@@ -12,7 +11,7 @@ class IngestMetadata:
     """Tracks the outcome of a single ingestion run."""
 
     run_timestamp: datetime
-    target_date: Optional[date]
+    target_date: date | None
     landing_files_scanned: int
     bronze_rows_written: int
     bronze_files_written: int

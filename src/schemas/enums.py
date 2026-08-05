@@ -123,3 +123,13 @@ class CloseReason(str, Enum):
     TIMEOUT = "timeout"
     SYSTEM_ERROR = "system_error"
     MAX_TURNS_REACHED = "max_turns_reached"
+
+
+class FeedbackCategory(str, Enum):
+    """Represents the category of user feedback."""
+
+    ACCURACY = "accuracy"
+    TONE = "tone"
+    SPEED = "speed"
+    RELEVANCE = "relevance"
+    HELPFULNESS = "helpfulness"

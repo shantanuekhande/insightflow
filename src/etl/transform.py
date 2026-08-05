@@ -25,6 +25,7 @@ from src.schemas.enums import (
     ErrorCode,
     EventType,
     FailureReason,
+    FeedbackCategory,
     FeedbackType,
     LoginStatus,
     ModelProvider,
@@ -50,18 +51,20 @@ _ENUM_VALUES: dict[str, set[str]] = {
     "feedback_type": {e.value for e in FeedbackType},
     "prompt_category": {e.value for e in PromptCategory},
     "close_reason": {e.value for e in CloseReason},
+    "feedback_category": {e.value for e in FeedbackCategory},
 }
 
 # Fields that must be non-null when the event_type requires them
 _REQUIRED_BY_EVENT: dict[str, list[str]] = {
-    "user_login": ["user_id", "subscription_tier", "device_type", "device_os", "login_status"],
-    "conversation_started": ["user_id", "subscription_tier", "conversation_id"],
-    "prompt_submitted": ["user_id", "conversation_id", "prompt_char_count", "prompt_token_count", "prompt_category"],
-    "model_response": ["user_id", "conversation_id", "model_provider", "model_name", "status",
+    "user_login": ["user_id", "subscription_tier", "device_type", "device_os", "country_code", "login_status"],
+    "conversation_started": ["user_id", "session_id", "subscription_tier", "conversation_id"],
+    "prompt_submitted": ["user_id", "session_id", "conversation_id", "prompt_char_count", "prompt_token_count", "prompt_category"],
+    "model_response": ["user_id", "session_id", "conversation_id", "model_provider", "model_name", "status",
                        "prompt_token_count", "response_token_count", "total_latency_ms",
-                       "inference_latency_ms", "queue_wait_ms", "time_to_first_token_ms"],
-    "feedback": ["user_id", "conversation_id", "response_id", "feedback_type"],
-    "conversation_closed": ["user_id", "conversation_id", "turn_count", "conversation_duration_seconds"],
+                       "inference_latency_ms", "queue_wait_ms", "time_to_first_token_ms",
+                       "estimated_cost_usd"],
+    "feedback": ["user_id", "session_id", "conversation_id", "response_id", "feedback_type"],
+    "conversation_closed": ["user_id", "session_id", "conversation_id", "close_reason", "turn_count", "conversation_duration_seconds"],
 }
 
 

@@ -4,11 +4,13 @@ from pydantic import Field
 
 from .common import BaseEvent
 from .enums import (
+    CloseReason,
     DeviceOS,
     DeviceType,
     ErrorCode,
     EventType,
     FailureReason,
+    FeedbackCategory,
     FeedbackType,
     LoginStatus,
     ModelProvider,
@@ -23,9 +25,11 @@ class UserLogin(BaseEvent):
 
     event_type: Literal[EventType.USER_LOGIN] = Field(default=EventType.USER_LOGIN)
     user_id: str
+    session_id: Optional[str] = Field(default=None)
     subscription_tier: SubscriptionTier
     device_type: DeviceType
     device_os: DeviceOS
+    country_code: str
     login_status: LoginStatus
     failure_reason: Optional[FailureReason] = Field(default=None)
 
@@ -37,6 +41,7 @@ class ConversationStarted(BaseEvent):
         default=EventType.CONVERSATION_STARTED
     )
     user_id: str
+    session_id: str
     subscription_tier: SubscriptionTier
     conversation_id: str
 
@@ -48,6 +53,7 @@ class PromptSubmitted(BaseEvent):
         default=EventType.PROMPT_SUBMITTED
     )
     user_id: str
+    session_id: str
     conversation_id: str
     prompt_char_count: int
     prompt_token_count: int
@@ -61,6 +67,7 @@ class ModelResponse(BaseEvent):
         default=EventType.MODEL_RESPONSE
     )
     user_id: str
+    session_id: str
     conversation_id: str
     model_provider: ModelProvider
     model_name: str
@@ -72,6 +79,10 @@ class ModelResponse(BaseEvent):
     inference_latency_ms: int
     queue_wait_ms: int
     time_to_first_token_ms: int
+    estimated_cost_usd: float
+    server_id: Optional[str] = Field(default=None)
+    server_region: Optional[str] = Field(default=None)
+    server_instance_type: Optional[str] = Field(default=None)
 
 
 class Feedback(BaseEvent):
@@ -79,9 +90,11 @@ class Feedback(BaseEvent):
 
     event_type: Literal[EventType.FEEDBACK] = Field(default=EventType.FEEDBACK)
     user_id: str
+    session_id: str
     conversation_id: str
     response_id: str
     feedback_type: FeedbackType
+    feedback_category: Optional[FeedbackCategory] = Field(default=None)
     rating_value: Optional[int] = Field(default=None, ge=1, le=5)
 
 
@@ -92,6 +105,8 @@ class ConversationClosed(BaseEvent):
         default=EventType.CONVERSATION_CLOSED
     )
     user_id: str
+    session_id: str
     conversation_id: str
+    close_reason: CloseReason
     turn_count: int
     conversation_duration_seconds: int
