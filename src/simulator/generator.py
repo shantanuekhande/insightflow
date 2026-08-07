@@ -231,35 +231,35 @@ def _build_session(
         inference_latency = max(50, latency - queue_wait_ms)
         ttft = random.randint(10, max(10, inference_latency // 3)) if response_status == ModelResponseStatus.SUCCESS else 0
 
-        events.append(
-            ModelResponse(
-                event_timestamp=current_timestamp,
-                schema_version=config.schema_version,
-                user_id=persona.user_id,
-                session_id=session_id,
-                conversation_id=session_id,
-                model_provider=_pick_model_provider(persona),
-                model_name=model_name,
-                status=response_status,
-                error_code=_pick_error_code(response_status),
-                prompt_token_count=prompt_token_count,
-                response_token_count=response_token_count,
-                total_latency_ms=latency,
-                inference_latency_ms=inference_latency,
-                queue_wait_ms=queue_wait_ms,
-                time_to_first_token_ms=ttft,
-                estimated_cost_usd=estimated_cost,
-                server_id=random.choice(_SERVER_IDS),
-                server_region=random.choice(_SERVER_REGIONS),
-                server_instance_type=random.choice(_SERVER_TYPES),
-            )
+        response = ModelResponse(
+            event_timestamp=current_timestamp,
+            schema_version=config.schema_version,
+            user_id=persona.user_id,
+            session_id=session_id,
+            conversation_id=session_id,
+            model_provider=_pick_model_provider(persona),
+            model_name=model_name,
+            status=response_status,
+            error_code=_pick_error_code(response_status),
+            prompt_token_count=prompt_token_count,
+            response_token_count=response_token_count,
+            total_latency_ms=latency,
+            inference_latency_ms=inference_latency,
+            queue_wait_ms=queue_wait_ms,
+            time_to_first_token_ms=ttft,
+            estimated_cost_usd=estimated_cost,
+            server_id=random.choice(_SERVER_IDS),
+            server_region=random.choice(_SERVER_REGIONS),
+            server_instance_type=random.choice(_SERVER_TYPES),
         )
+        events.append(response)
 
         # 5) Optional Feedback
         if random.random() < _FEEDBACK_PROBABILITY:
             current_timestamp += timedelta(seconds=random.randint(5, 120))
             feedback_type = _pick_feedback_type(persona)
             feedback_category = _pick_feedback_category()
+            # The response_id must link to the event_id of the ModelResponse
             events.append(
                 Feedback(
                     event_timestamp=current_timestamp,
@@ -267,7 +267,7 @@ def _build_session(
                     user_id=persona.user_id,
                     session_id=session_id,
                     conversation_id=session_id,
-                    response_id=str(uuid4()),
+                    response_id=str(response.event_id),
                     feedback_type=feedback_type,
                     feedback_category=feedback_category,
                     rating_value=_pick_rating_value(feedback_type),

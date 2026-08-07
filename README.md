@@ -173,15 +173,23 @@ uvicorn src.api.server:app --reload --port 8000
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/gold/model-perf` | Model performance metrics |
+| GET | `/api/gold/model-perf/trend` | Model performance over a date range |
 | GET | `/api/gold/user-activity` | User login stats by tier |
+| GET | `/api/gold/user-activity/trend` | User activity over a date range |
 | GET | `/api/gold/conversation-stats` | Global conversation aggregates |
 | GET | `/api/gold/prompt-analytics` | Prompt category metrics |
 | GET | `/api/gold/feedback-summary` | Feedback type breakdown |
+| GET | `/api/gold/feedback/trend` | Feedback summary over a date range |
+| GET | `/api/gold/feedback-categories` | Feedback category breakdown |
+| GET | `/api/gold/kpis` | Daily KPI summary over a date range |
+| GET | `/api/gold/latency-heatmap` | P95 latency heatmap over a date range |
+| GET | `/api/gold/feedback-correlation` | Feedback vs. latency correlation over a date range |
 | GET | `/api/silver/events?date=X` | Raw events with optional type filter |
 | GET | `/api/dates` | Available date partitions |
 | GET | `/api/health` | Health check |
 
-All gold endpoints accept optional `?date=YYYY-MM-DD` query parameter.
+Single-date gold endpoints accept optional `?date=YYYY-MM-DD` query parameter.
+Trend and dashboard summary endpoints accept `?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD`.
 
 ## Running Tests
 
@@ -198,6 +206,7 @@ python -m pytest src/tests/ -v
 | `conversation_stats` | date (global) | total_conversations, avg/max turns, avg duration |
 | `prompt_analytics` | prompt_category | total_prompts, total/avg input tokens, avg char count |
 | `feedback_summary` | feedback_type | count, avg_rating |
+| `feedback_categories` | feedback_category | count, avg_rating |
 
 ## What I Learned
 

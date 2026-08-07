@@ -68,6 +68,61 @@
   }
   .header-controls button:hover { opacity: 0.85; }
 
+  /* Section dividers */
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 24px 8px;
+    padding-top: 6px;
+  }
+  .section-divider .line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .section-divider .tag {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .section-divider .tag .icon { margin-right: 5px; }
+
+  /* Data Quality Scorecard */
+  .dq-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 20px 24px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .dq-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .dq-card .label {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .dq-card .value {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .dq-card .sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
   /* KPI row */
   .kpi-row {
     display: grid;
@@ -138,11 +193,28 @@
     border-radius: 4px;
     color: white;
   }
-  .badge-q1 { background: var(--orange); }
-  .badge-q2 { background: var(--red); }
-  .badge-q3 { background: var(--purple); }
-  .badge-q4 { background: var(--accent); }
-  .badge-q5 { background: var(--green); }
+  .badge-cost { background: var(--orange); }
+  .badge-reliability { background: var(--red); }
+  .badge-latency { background: var(--purple); }
+  .badge-users { background: var(--accent); }
+  .badge-feedback { background: var(--green); }
+  .badge-dq { background: var(--cyan); }
+
+  /* Data gap warning */
+  .data-gap-banner {
+    background: rgba(234, 179, 8, 0.08);
+    border: 1px solid rgba(234, 179, 8, 0.25);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin: 0 24px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--yellow);
+  }
+  .data-gap-banner .gap-icon { font-size: 16px; }
+  .data-gap-banner .gap-text strong { color: var(--text); }
 
   /* Chart containers */
   .chart-wrap { position: relative; width: 100%; height: 300px; }
@@ -199,6 +271,42 @@
     border-radius: 3px;
   }
 
+  /* Anomaly legend & sigma control */
+  .anomaly-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+  }
+  .anomaly-line-sample {
+    width: 20px;
+    height: 2px;
+    border-top: 2px dashed var(--red);
+  }
+  .anomaly-sigma-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+  }
+  .anomaly-sigma-control label {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .anomaly-sigma-control select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .anomaly-sigma-control select:hover { border-color: var(--accent); }
+
   /* Power users table */
   .power-table {
     width: 100%;
@@ -214,6 +322,12 @@
     letter-spacing: 0.4px;
     font-weight: 500;
     border-bottom: 1px solid var(--border);
+  }
+  .power-table th.sortable {
+    cursor: pointer;
+  }
+  .power-table th.sortable:hover {
+    color: var(--text);
   }
   .power-table td {
     padding: 7px 10px;
@@ -232,6 +346,13 @@
   .tier-free { background: #374151; color: #9ca3af; }
   .tier-pro { background: #1e3a5f; color: #60a5fa; }
   .tier-enterprise { background: #3b1f4a; color: #c084fc; }
+  .user-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .user-filters button { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .user-filters button.active { background: var(--accent); color: white; border-color: var(--accent); }
 
   .empty-state {
     display: flex;
@@ -244,8 +365,29 @@
 
   @media (max-width: 900px) {
     .kpi-row { grid-template-columns: repeat(3, 1fr); }
+    .dq-row { grid-template-columns: repeat(2, 1fr); }
     .panels { grid-template-columns: 1fr; }
   }
+
+  /* Reliability legend */
+  .reliability-legend {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .legend-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 3px;
+  }
+  .green-dot  { background: var(--green); }
+  .yellow-dot { background: var(--yellow); }
+  .red-dot    { background: var(--red); }
 </style>
 </head>
 <body>
@@ -290,7 +432,51 @@
   </div>
 </div>
 
-<!-- 4 Panels -->
+<!-- Section: Data Quality -->
+<div class="section-divider">
+  <div class="line"></div>
+  <div class="tag"><span class="icon">&#x1f6e1;&#xfe0f;</span> Pipeline Health &amp; Data Quality</div>
+  <div class="line"></div>
+</div>
+
+<!-- Data Quality Scorecard -->
+<div class="dq-row">
+  <div class="dq-card">
+    <div class="label">Avg Quarantine Rate</div>
+    <div class="value" id="dq-quarantine-rate">—%</div>
+    <div class="sub" id="dq-quarantine-sub">landing files failed validation</div>
+  </div>
+  <div class="dq-card">
+    <div class="label">Data Validity</div>
+    <div class="value" id="dq-validity-rate">—%</div>
+    <div class="sub" id="dq-validity-sub">landing files passed ingestion</div>
+  </div>
+  <div class="dq-card">
+    <div class="label">Gold Completeness</div>
+    <div class="value" id="dq-completeness">—%</div>
+    <div class="sub" id="dq-completeness-sub">of 6 tables generated daily</div>
+  </div>
+  <div class="dq-card">
+    <div class="label">Total Volume</div>
+    <div class="value" id="dq-volume">—</div>
+    <div class="sub" id="dq-volume-sub">processed Silver rows</div>
+  </div>
+</div>
+
+<!-- Data Gap Warning (hidden by default, shown when gaps detected) -->
+<div class="data-gap-banner" id="dataGapBanner" style="display:none">
+  <span class="gap-icon">&#x26a0;&#xfe0f;</span>
+  <span class="gap-text" id="dataGapText"></span>
+</div>
+
+<!-- Section: Analytics Panels -->
+<div class="section-divider">
+  <div class="line"></div>
+  <div class="tag"><span class="icon">&#x1f4ca;</span> AI Model Analytics &amp; User Insights</div>
+  <div class="line"></div>
+</div>
+
+<!-- 5 Panels -->
 <div class="panels">
 
   <!-- Panel 1: Cost Driver Breakdown -->
@@ -298,23 +484,56 @@
     <div class="panel-header">
       <div>
         <h2>Cost Driver Breakdown</h2>
-        <div class="subtitle">Daily inference cost, broken down by model</div>
+        <div class="subtitle">Daily inference cost by model — red dashed lines flag cost spikes</div>
       </div>
-      <span class="badge badge-q1">Q1</span>
+      <span class="badge badge-cost">COST</span>
     </div>
     <div class="chart-wrap">
       <canvas id="costChart"></canvas>
     </div>
+    <div class="anomaly-legend">
+      <div class="anomaly-line-sample"></div>
+      <span id="anomalyCount">0 anomalies detected</span>
+      <div class="anomaly-sigma-control">
+        <label>Threshold:</label>
+        <select id="sigmaSelect" onchange="updateSigma(this.value)">
+          <option value="1.5">1.5&#x3c3; (sensitive)</option>
+          <option value="2" selected>2&#x3c3; (default)</option>
+          <option value="2.5">2.5&#x3c3; (strict)</option>
+          <option value="3">3&#x3c3; (very strict)</option>
+        </select>
+        <label>from 7-day rolling avg</label>
+      </div>
+    </div>
   </div>
 
-  <!-- Panel 2: Latency Heatmap -->
+  <!-- Panel 2: Model Reliability -->
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Model Reliability</h2>
+        <div class="subtitle">Success rate, errors &amp; timeouts per model — lower reliability at the top</div>
+      </div>
+      <span class="badge badge-reliability">RELIABILITY</span>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="reliabilityChart"></canvas>
+    </div>
+    <div class="reliability-legend">
+      <span style="color:var(--green)" class="legend-dot green-dot"></span><span>98%+ healthy</span>
+      <span style="color:var(--yellow)" class="legend-dot yellow-dot"></span><span>95-98% warn</span>
+      <span style="color:var(--red)" class="legend-dot red-dot"></span><span>&lt;95% critical</span>
+    </div>
+  </div>
+
+  <!-- Panel 3: Latency Heatmap -->
   <div class="panel">
     <div class="panel-header">
       <div>
         <h2>Latency Heatmap</h2>
-        <div class="subtitle">P95 latency by hour and day-of-week</div>
+        <div class="subtitle">P95 latency by hour and day-of-week (aggregated across all days in range)</div>
       </div>
-      <span class="badge badge-q3">Q3</span>
+      <span class="badge badge-latency">LATENCY</span>
     </div>
     <div class="heatmap-container" id="heatmapContainer">
       <div class="empty-state">Loading heatmap...</div>
@@ -326,9 +545,9 @@
     <div class="panel-header">
       <div>
         <h2>Top Resource Consumers</h2>
-        <div class="subtitle">Users ranked by total inference cost</div>
+        <div class="subtitle">Users ranked by total inference cost — click column headers to sort</div>
       </div>
-      <span class="badge badge-q4">Q4</span>
+      <span class="badge badge-users">USERS</span>
     </div>
     <div id="powerUsersContainer">
       <div class="empty-state">Loading users...</div>
@@ -342,7 +561,7 @@
         <h2>Feedback vs. Latency</h2>
         <div class="subtitle">Average user rating by response speed</div>
       </div>
-      <span class="badge badge-q5">Q5</span>
+      <span class="badge badge-feedback">FEEDBACK</span>
     </div>
     <div class="chart-wrap">
       <canvas id="correlationChart"></canvas>
@@ -358,11 +577,64 @@
 const API = '';
 let costChart = null;
 let correlationChart = null;
+let allPowerUsers = [];
+let currentSort = { key: 'total_cost_usd', dir: 'desc' };
+let currentTierFilter = 'All';
+let currentSigma = 2;
+let _rawModelPerfData = null;  // stored for sigma re-render
+
 
 // Chart.js defaults for dark theme
 Chart.defaults.color = '#71717a';
 Chart.defaults.borderColor = '#2a2d3a';
 Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+
+// ---------------------------------------------------------------------------
+// Custom Chart.js plugin: draw red dashed anomaly vertical lines
+// ---------------------------------------------------------------------------
+const anomalyLinePlugin = {
+  id: 'anomalyLines',
+  afterDraw(chart) {
+    if (!chart._anomalyIndices || chart._anomalyIndices.length === 0) return;
+    const ctx = chart.ctx;
+    const xAxis = chart.scales.x;
+    const { top, bottom } = chart.chartArea;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 3]);
+    chart._anomalyIndices.forEach((idx, i) => {
+      const x = xAxis.getPixelForValue(idx);
+      ctx.beginPath();
+      ctx.moveTo(x, top);
+      ctx.lineTo(x, bottom);
+      ctx.stroke();
+      // Draw a small red dot + dollar label at the top of each anomaly line
+      const av = chart._anomalyValues && chart._anomalyValues[i];
+      if (av) {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
+        ctx.beginPath();
+        ctx.arc(x, top + 8, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = '10px Inter, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('$' + av.value.toFixed(1), x - 6, top + 12);
+      }
+    });
+    ctx.restore();
+  }
+};
+Chart.register(anomalyLinePlugin);
+
+// ---------------------------------------------------------------------------
+// Sigma re-render
+// ---------------------------------------------------------------------------
+function updateSigma(val) {
+  currentSigma = parseFloat(val);
+  if (_rawModelPerfData) {
+    renderCostChart(_rawModelPerfData);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Init
@@ -386,18 +658,22 @@ async function loadDashboard() {
   const base = `from_date=${from}&to_date=${to}`;
 
   // Fire all requests in parallel
-  const [kpis, modelPerf, heatmap, powerUsers, correlation] = await Promise.all([
+  const [kpis, modelPerf, modelReliability, heatmap, powerUsers, correlation, dataQuality] = await Promise.all([
     fetchJSON(`/api/gold/kpis?${base}`),
     fetchJSON(`/api/gold/model-perf/trend?${base}`),
+    fetchJSON(`/api/gold/model-reliability?${base}`),
     fetchJSON(`/api/gold/latency-heatmap?${base}`),
-    fetchJSON(`/api/gold/user-activity?date=${to}&top_n=20`),
+    fetchJSON(`/api/gold/user-activity/trend?${base}&top_n=100`),
     fetchJSON(`/api/gold/feedback-correlation?${base}`),
+    fetchJSON(`/api/gold/data-quality?${base}`),
   ]);
 
   renderKPIs(kpis);
+  renderDataQuality(dataQuality);
   renderCostChart(modelPerf);
+  renderReliabilityChart(modelReliability);
   renderHeatmap(heatmap);
-  renderPowerUsers(powerUsers);
+  initPowerUsers(powerUsers);
   renderCorrelationChart(correlation);
 }
 
@@ -418,6 +694,150 @@ function fmt(n, decimals = 1) {
   if (n == null || isNaN(n)) return '—';
   return Number(n).toLocaleString(undefined, { maximumFractionDigits: decimals });
 }
+
+// ---------------------------------------------------------------------------
+// Data Quality Scorecard (with data gap detection)
+// ---------------------------------------------------------------------------
+function renderDataQuality(data) {
+  if (!Array.isArray(data) || data.length === 0) return;
+
+  // --- Data gap detection ---
+  const fromStr = document.getElementById('fromDate').value;
+  const toStr = document.getElementById('toDate').value;
+  if (fromStr && toStr) {
+    const from = new Date(fromStr);
+    const to = new Date(toStr);
+    const totalExpected = Math.round((to - from) / 86400000) + 1; // inclusive
+    const datesWithData = data.filter(r => r.silver_rows > 0).length;
+    const gap = totalExpected - datesWithData;
+
+    const banner = document.getElementById('dataGapBanner');
+    const gapText = document.getElementById('dataGapText');
+    if (gap > 0) {
+      banner.style.display = 'flex';
+      gapText.innerHTML = `<strong>${gap} of ${totalExpected} days</strong> have no data in this range. ` +
+        `Only <strong>${datesWithData} days</strong> contain processed records. ` +
+        `The empty period in the charts reflects missing pipeline data, not a dashboard bug. ` +
+        `Adjust the date picker to match your generated data range, or re-run the ETL pipeline.`;
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  // --- DQ metrics ---
+  let totalQuarantine = 0, totalValidity = 0, totalCompleteness = 0, totalVolume = 0;
+  const daysWithData = [];
+  data.forEach(row => {
+    totalQuarantine += (row.quarantine_rate || 0);
+    totalValidity += (row.validity_rate || 0);
+    totalCompleteness += (row.gold_completeness || 0);
+    totalVolume += (row.silver_rows || 0);
+    if (row.silver_rows > 0) daysWithData.push(row);
+  });
+
+  const n = daysWithData.length || 1;
+  const avgQuarantine = daysWithData.reduce((s, r) => s + (r.quarantine_rate || 0), 0) / n;
+  const avgValidity = daysWithData.reduce((s, r) => s + (r.validity_rate || 0), 0) / n;
+  const avgCompleteness = daysWithData.reduce((s, r) => s + (r.gold_completeness || 0), 0) / n;
+
+  // Display '—%' if no data, otherwise the formatted average
+  document.getElementById('dq-quarantine-rate').textContent = daysWithData.length > 0 ? fmt(avgQuarantine, 1) + '%' : '—%';
+  document.getElementById('dq-validity-rate').textContent = daysWithData.length > 0 ? fmt(avgValidity, 1) + '%' : '—%';
+  document.getElementById('dq-completeness').textContent = daysWithData.length > 0 ? fmt(avgCompleteness, 1) + '%' : '—%';
+
+  // Total volume can still be 0, so fmt(0,0) is fine.
+  // The sub-text should reflect if there's no data.
+  document.getElementById('dq-volume').textContent = fmt(totalVolume, 0);
+  document.getElementById('dq-volume-sub').textContent =
+    daysWithData.length > 0 ? `${daysWithData.length} active days in range` : 'no data in range';
+}
+
+
+// ---------------------------------------------------------------------------
+// Panel 2: Model Reliability — Horizontal Bar Chart
+// ---------------------------------------------------------------------------
+let reliabilityChart = null;
+
+function renderReliabilityChart(data) {
+  if (!Array.isArray(data) || data.length === 0) return;
+
+  // Data is already ordered by avg_success_rate ASC (least reliable first)
+  const labels = data.map(r => r.model_name || 'Unknown');
+  const successRates = data.map(r => r.avg_success_rate || 0);
+  const errors = data.map(r => r.total_errors || 0);
+  const timeouts = data.map(r => r.total_timeouts || 0);
+  const rateLimited = data.map(r => r.total_rate_limited || 0);
+  const invocations = data.map(r => r.total_invocations || 0);
+  const avgLatency = data.map(r => r.avg_latency_ms || 0);
+
+  // Color by success rate: <95% red, 95-98% yellow, >98% green
+  const bgColors = successRates.map(rate => {
+    if (rate >= 98) return 'rgba(34, 197, 94, 0.7)';     // green
+    if (rate >= 95) return 'rgba(234, 179, 8, 0.7)';     // yellow
+    return 'rgba(239, 68, 68, 0.7)';                     // red
+  });
+  const borderColors = successRates.map(rate => {
+    if (rate >= 98) return '#22c55e';
+    if (rate >= 95) return '#eab308';
+    return '#ef4444';
+  });
+
+  if (reliabilityChart) reliabilityChart.destroy();
+  reliabilityChart = new Chart(document.getElementById('reliabilityChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Success Rate %',
+        data: successRates,
+        backgroundColor: bgColors,
+        borderColor: borderColors,
+        borderWidth: 1.5,
+        borderRadius: 6,
+        barPercentage: 0.55,
+      }]
+    },
+    options: {
+      indexAxis: 'y',  // horizontal bars
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => ctx[0].label,
+            label: ctx => {
+              const i = ctx.dataIndex;
+              const lines = [
+                `Success Rate: ${successRates[i]}%`,
+                `Invocations: ${fmt(invocations[i], 0)}`,
+                `Avg Latency: ${fmt(avgLatency[i], 0)}ms`,
+              ];
+              if (errors[i] > 0) lines.push(`Errors: ${fmt(errors[i], 0)}`);
+              if (timeouts[i] > 0) lines.push(`Timeouts: ${fmt(timeouts[i], 0)}`);
+              if (rateLimited[i] > 0) lines.push(`Rate Limited: ${fmt(rateLimited[i], 0)}`);
+              return lines;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          min: 90,
+          max: 100,
+          ticks: { callback: v => v + '%' },
+          title: { display: true, text: 'Success Rate', font: { size: 11 } },
+          grid: { color: 'rgba(255,255,255,0.04)' }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { font: { size: 12 } }
+        }
+      }
+    }
+  });
+}
+
 
 // ---------------------------------------------------------------------------
 // KPI Cards
@@ -452,7 +872,7 @@ function renderKPIs(kpis) {
 }
 
 // ---------------------------------------------------------------------------
-// Panel 1: Cost Driver Line Chart
+// Panel 1: Cost Driver Line Chart (with anomaly detection via Chart.js plugin)
 // ---------------------------------------------------------------------------
 const MODEL_COLORS = {
   'gpt-4.1-mini':     { line: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
@@ -466,12 +886,15 @@ const DEFAULT_COLOR = { line: '#6b7280', bg: 'rgba(107,114,128,0.08)' };
 function renderCostChart(data) {
   if (!Array.isArray(data) || data.length === 0) return;
 
-  // Pivot: { model_name → { date → cost } }
+  // Store raw data for sigma re-render
+  _rawModelPerfData = data;
+
+  // Pivot: { model_name -> { date -> cost } }
   const modelDates = {};
   const allDates = new Set();
   data.forEach(row => {
     const model = row.model_name;
-    const d = row.event_date;
+    const d = row.event_date.substring(0, 10);
     if (!modelDates[model]) modelDates[model] = {};
     modelDates[model][d] = row.total_cost_usd || 0;
     allDates.add(d);
@@ -480,7 +903,7 @@ function renderCostChart(data) {
   const sortedDates = [...allDates].sort();
   const labels = sortedDates.map(d => {
     const parts = d.split('-');
-    return parts[1] + '/' + parts[2]; // MM/DD
+    return parts[1] + '/' + parts[2];
   });
 
   const datasets = Object.keys(modelDates).map(model => {
@@ -497,6 +920,29 @@ function renderCostChart(data) {
       borderWidth: 2,
     };
   });
+
+  // --- Anomaly detection with std > 0 guard ---
+  const dailyTotals = {};
+  sortedDates.forEach(d => dailyTotals[d] = 0);
+  data.forEach(row => {
+    dailyTotals[row.event_date.substring(0, 10)] += row.total_cost_usd || 0;
+  });
+
+  const costs = sortedDates.map(d => dailyTotals[d]);
+  const anomalyIndices = [];
+  const anomalyValues = [];
+  const WINDOW = 7;
+  for (let i = WINDOW; i < costs.length; i++) {
+    const window = costs.slice(i - WINDOW, i);
+    const mean = window.reduce((a, b) => a + b, 0) / WINDOW;
+    const variance = window.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / WINDOW;
+    const std = Math.sqrt(variance);
+    // Only flag if stdDev > 0 (avoid false positives on flat/zero-variance data)
+    if (std > 0 && costs[i] > mean + currentSigma * std) {
+      anomalyIndices.push(i);
+      anomalyValues.push({ index: i, value: costs[i], mean: mean, threshold: mean + currentSigma * std, std: std });
+    }
+  }
 
   if (costChart) costChart.destroy();
   costChart = new Chart(document.getElementById('costChart'), {
@@ -526,6 +972,14 @@ function renderCostChart(data) {
       }
     }
   });
+
+  // Attach anomaly data for the plugin to draw
+  costChart._anomalyIndices = anomalyIndices;
+  costChart._anomalyValues = anomalyValues;
+  document.getElementById('anomalyCount').textContent =
+    anomalyIndices.length > 0
+      ? `${anomalyIndices.length} anomal${anomalyIndices.length === 1 ? 'y' : 'ies'} detected (>${currentSigma}\u03c3 from 7-day avg)`
+      : `No anomalies detected (>${currentSigma}\u03c3 threshold)`;
 }
 
 // ---------------------------------------------------------------------------
@@ -556,7 +1010,7 @@ function renderHeatmap(data) {
 
   function latencyToColor(val) {
     const ratio = Math.min(1, Math.max(0, (val - minLat) / (maxLat - minLat)));
-    // Green → Yellow → Red
+    // Green -> Yellow -> Red
     if (ratio < 0.5) {
       const r = Math.round(255 * (ratio * 2));
       const g = Math.round(200 + 55 * (1 - ratio * 2));
@@ -575,7 +1029,7 @@ function renderHeatmap(data) {
   }
   html += '</tr></thead><tbody>';
 
-  // Render Mon-Sun (DuckDB dow: 0=Sun, 1=Mon, ..., 6=Sat)
+  // Render Mon-Sat (DuckDB dow: 0=Sun, 1=Mon, ..., 6=Sat)
   for (let dow = 1; dow <= 6; dow++) {
     html += `<tr><td class="day-label">${DAY_LABELS[dow]}</td>`;
     for (let h = 0; h < 24; h++) {
@@ -586,7 +1040,7 @@ function renderHeatmap(data) {
     }
     html += '</tr>';
   }
-  // Sunday
+  // Sunday (dow=0)
   html += `<tr><td class="day-label">${DAY_LABELS[0]}</td>`;
   for (let h = 0; h < 24; h++) {
     const val = (grid[0] && grid[0][h]) || 0;
@@ -606,34 +1060,72 @@ function renderHeatmap(data) {
 }
 
 // ---------------------------------------------------------------------------
-// Panel 3: Power Users Table
+// Panel 3: Power Users Table (with filtering and sorting)
 // ---------------------------------------------------------------------------
-function renderPowerUsers(data) {
+function initPowerUsers(data) {
+  allPowerUsers = data || [];
+  renderPowerUsers();
+}
+
+function setTierFilter(tier) {
+  currentTierFilter = tier;
+  renderPowerUsers();
+}
+
+function setSort(key) {
+  if (currentSort.key === key) {
+    currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    currentSort.key = key;
+    currentSort.dir = 'desc';
+  }
+  renderPowerUsers();
+}
+
+function renderPowerUsers() {
   const container = document.getElementById('powerUsersContainer');
-  if (!Array.isArray(data) || data.length === 0) {
+  if (!Array.isArray(allPowerUsers) || allPowerUsers.length === 0) {
     container.innerHTML = '<div class="empty-state">No user data available</div>';
     return;
   }
 
-  let html = '<table class="power-table"><thead><tr>';
-  html += '<th>#</th><th>User</th><th>Tier</th><th>Requests</th><th>Sessions</th>';
-  html += '<th>Tokens</th><th>Cost</th>';
+  const filtered = currentTierFilter === 'All'
+    ? allPowerUsers
+    : allPowerUsers.filter(u => (u.subscription_tier || 'free').toLowerCase() === currentTierFilter.toLowerCase());
+
+  filtered.sort((a, b) => {
+    const valA = a[currentSort.key] || 0;
+    const valB = b[currentSort.key] || 0;
+    const res = valA > valB ? 1 : -1;
+    return currentSort.dir === 'asc' ? res : -res;
+  });
+
+  const headers = [
+    { key: 'user_id', label: 'User' }, { key: 'subscription_tier', label: 'Tier' },
+    { key: 'total_requests', label: 'Requests' }, { key: 'session_count', label: 'Sessions' },
+    { key: 'total_cost_usd', label: 'Cost' }
+  ];
+
+  let html = `<div class="user-filters">
+    ${['All', 'Enterprise', 'Pro', 'Free'].map(t => `<button class="${currentTierFilter === t ? 'active' : ''}" onclick="setTierFilter('${t}')">${t}</button>`).join('')}
+  </div>`;
+  html += '<table class="power-table"><thead><tr><th>#</th>';
+  headers.forEach(h => {
+    const sortIndicator = currentSort.key === h.key ? (currentSort.dir === 'asc' ? ' \u25b2' : ' \u25bc') : '';
+    html += `<th class="sortable" onclick="setSort('${h.key}')">${h.label}${sortIndicator}</th>`;
+  });
   html += '</tr></thead><tbody>';
 
-  data.forEach((row, i) => {
+  filtered.slice(0, 20).forEach((row, i) => {
     const tier = (row.subscription_tier || 'free').toLowerCase();
     const tierClass = tier === 'enterprise' ? 'tier-enterprise' : tier === 'pro' ? 'tier-pro' : 'tier-free';
-    const tokens = ((row.total_input_tokens || 0) + (row.total_output_tokens || 0));
-    const tokensK = tokens >= 1000 ? (tokens / 1000).toFixed(1) + 'K' : tokens;
     html += `<tr>
       <td>${i + 1}</td>
-      <td style="font-family:monospace;font-size:12px">${row.user_id ? row.user_id.substring(0, 12) : '—'}</td>
+      <td style="font-family:monospace;font-size:12px">${row.user_id ? row.user_id.substring(0, 12) : '\u2014'}</td>
       <td><span class="tier-badge ${tierClass}">${tier}</span></td>
       <td>${fmt(row.total_requests, 0)}</td>
       <td>${fmt(row.session_count, 0)}</td>
-      <td>${tokensK}</td>
-      <td style="font-weight:600">$${row.total_cost_usd != null ? row.total_cost_usd.toFixed(2) : '—'}</td>
-    </tr>`;
+      <td style="font-weight:600">$${row.total_cost_usd != null ? row.total_cost_usd.toFixed(2) : '\u2014'}</td></tr>`;
   });
 
   html += '</tbody></table>';
@@ -658,7 +1150,6 @@ function renderCorrelationChart(data) {
 
   const labels = sorted.map(r => {
     const bucket = r.latency_bucket || 'Unknown';
-    // Extract short label
     return bucket.split('(')[0].trim();
   });
   const avgRatings = sorted.map(r => r.avg_rating || 0);

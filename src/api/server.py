@@ -203,11 +203,25 @@ async def get_latency_heatmap(from_date: str = Query(...), to_date: str = Query(
     return qs.get_latency_heatmap(_parse_date(from_date), _parse_date(to_date))
 
 
+@app.get("/api/gold/model-reliability")
+async def get_model_reliability(from_date: str = Query(...), to_date: str = Query(...)):
+    """Q2: Model reliability — success rate, errors, timeouts per model."""
+    qs = _get_qs()
+    return qs.get_model_reliability(_parse_date(from_date), _parse_date(to_date))
+
+
 @app.get("/api/gold/feedback-correlation")
 async def get_feedback_correlation(from_date: str = Query(...), to_date: str = Query(...)):
     """Q5: Feedback vs latency correlation — avg rating by latency bucket."""
     qs = _get_qs()
     return qs.get_feedback_latency_correlation(_parse_date(from_date), _parse_date(to_date))
+
+
+@app.get("/api/gold/data-quality")
+async def get_data_quality(from_date: str = Query(...), to_date: str = Query(...)):
+    """Data Quality Scorecard — quarantine rate, completeness, volume per day."""
+    qs = _get_qs()
+    return qs.get_data_quality(_parse_date(from_date), _parse_date(to_date))
 
 
 # ---------------------------------------------------------------------------
@@ -226,6 +240,16 @@ async def get_events(
     return qs.get_events(d, event_type, limit)
 
 
+@app.get("/api/silver/events/feedback")
+async def get_feedback_events(
+    date: Optional[str] = Query(None),
+    limit: int = Query(100),
+):
+    qs = _get_qs()
+    d = _parse_date(date)
+    return qs.get_events(d, 'feedback', limit)
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -241,6 +265,9 @@ def _parse_date(value: Optional[str]) -> Optional[date]:
     if value is None:
         return None
     return date.fromisoformat(value)
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
